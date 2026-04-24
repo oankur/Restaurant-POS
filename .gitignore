@@ -1,0 +1,44 @@
+# Dependencies
+node_modules/
+client/node_modules/
+server/node_modules/
+
+# Build outputs
+client/dist/
+server/dist/
+
+# Environment files
+.env
+.env.local
+.env.*.local
+server/.env
+client/.env
+
+# Prisma generated
+server/prisma/dev.db
+server/prisma/dev.db-journal
+
+# Logs
+*.log
+npm-debug.log*
+
+# OS
+.DS_Store
+Thumbs.db
+
+# IDE
+.vscode/
+.idea/
+
+# Reference screenshots in project root
+Screenshot Reference/
+/admin_dash.png
+/bg_login.png
+/bg_pos.png
+/check_admin.png
+/check_outlet.png
+/final_pos.png
+/login2.png
+/login_brand.png
+/login_green.png
+/outlet_pos.png

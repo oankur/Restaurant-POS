@@ -1,0 +1,118 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id        String   @id @default(cuid())
+  name      String
+  email     String   @unique
+  password  String
+  role      String   @default("SUPER_ADMIN")
+  isActive  Boolean  @default(true)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model Outlet {
+  id              String     @id @default(cuid())
+  name            String
+  address         String
+  phone           String
+  isActive        Boolean    @default(true)
+  username        String     @unique
+  password        String
+  managerPassword String
+  taxRate         Float      @default(0.05)
+  menuItems       MenuItem[]
+  tables          Table[]
+  orders          Order[]
+  categories      Category[]
+  createdAt       DateTime   @default(now())
+  updatedAt       DateTime   @updatedAt
+}
+
+model Category {
+  id        String   @id @default(cuid())
+  name      String
+  outletId  String
+  outlet    Outlet   @relation(fields: [outletId], references: [id])
+  createdAt DateTime @default(now())
+
+  @@unique([name, outletId])
+}
+
+model MenuItem {
+  id          String      @id @default(cuid())
+  name        String
+  description String?
+  price       Float
+  category    String
+  isAvailable Boolean     @default(true)
+  outletId    String
+  outlet      Outlet      @relation(fields: [outletId], references: [id])
+  orderItems  OrderItem[]
+  createdAt   DateTime    @default(now())
+  updatedAt   DateTime    @updatedAt
+}
+
+model Table {
+  id       String  @id @default(cuid())
+  number   Int
+  capacity Int
+  status   String  @default("AVAILABLE")
+  outletId String
+  outlet   Outlet  @relation(fields: [outletId], references: [id])
+  orders   Order[]
+}
+
+model Order {
+  id            String      @id @default(cuid())
+  orderNumber   String      @unique
+  type          String
+  status        String      @default("PENDING")
+  source        String      @default("OFFLINE")
+  outletId      String
+  outlet        Outlet      @relation(fields: [outletId], references: [id])
+  tableId       String?
+  table         Table?      @relation(fields: [tableId], references: [id])
+  items         OrderItem[]
+  subtotal      Float       @default(0)
+  tax           Float       @default(0)
+  total         Float       @default(0)
+  externalId    String?
+  customerName  String?
+  customerPhone String?
+  notes         String?
+  bill          Bill?
+  createdAt     DateTime    @default(now())
+  updatedAt     DateTime    @updatedAt
+}
+
+model OrderItem {
+  id         String    @id @default(cuid())
+  orderId    String
+  order      Order     @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  menuItemId String?
+  menuItem   MenuItem? @relation(fields: [menuItemId], references: [id])
+  itemName   String?
+  quantity   Int
+  price      Float
+  notes      String?
+}
+
+model Bill {
+  id          String   @id @default(cuid())
+  orderId     String   @unique
+  order       Order    @relation(fields: [orderId], references: [id])
+  subtotal    Float
+  tax         Float
+  total       Float
+  paymentMode String   @default("CASH")
+  isPaid      Boolean  @default(false)
+  createdAt   DateTime @default(now())
+}
