@@ -1,6 +1,6 @@
 import { io } from 'socket.io-client';
 
-export const socket = io('/', { autoConnect: false });
+export const socket = io(import.meta.env.VITE_API_URL || '/', { autoConnect: false });
 
 export const joinOutlet = (outletId: string) => {
   if (!socket.connected) socket.connect();
