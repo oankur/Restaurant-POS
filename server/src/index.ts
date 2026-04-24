@@ -24,11 +24,24 @@ export const prisma = new PrismaClient();
 const app = express();
 const httpServer = createServer(app);
 
-export const io = new Server(httpServer, {
-  cors: { origin: config.clientUrl, credentials: true },
-});
+const allowedOrigins = process.env.CLIENT_URL
+  ? process.env.CLIENT_URL.split(',').map(s => s.trim())
+  : ['http://localhost:5050', 'http://localhost:5173'];
 
-app.use(cors({ origin: config.clientUrl, credentials: true }));
+const corsOptions = {
+  origin: (origin: string | undefined, callback: (err: Error | null, allow?: boolean) => void) => {
+    if (!origin || allowedOrigins.includes(origin)) {
+      callback(null, true);
+    } else {
+      callback(new Error(`CORS: origin ${origin} not allowed`));
+    }
+  },
+  credentials: true,
+};
+
+export const io = new Server(httpServer, { cors: corsOptions });
+
+app.use(cors(corsOptions));
 app.use(express.json());
 
 app.use('/api/auth', authRoutes);
