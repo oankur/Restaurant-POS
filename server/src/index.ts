@@ -24,9 +24,12 @@ export const prisma = new PrismaClient();
 const app = express();
 const httpServer = createServer(app);
 
-const allowedOrigins = process.env.CLIENT_URL
-  ? process.env.CLIENT_URL.split(',').map(s => s.trim())
-  : ['http://localhost:5050', 'http://localhost:5173'];
+const allowedOrigins = [
+  'http://localhost:5050',
+  'http://localhost:5173',
+  'https://restaurant-pos-61y5.vercel.app',
+  ...(process.env.CLIENT_URL ? process.env.CLIENT_URL.split(',').map(s => s.trim()) : []),
+];
 
 const corsOptions = {
   origin: (origin: string | undefined, callback: (err: Error | null, allow?: boolean) => void) => {
