@@ -3,6 +3,9 @@ node_modules/
 client/node_modules/
 server/node_modules/
 
+# npm lockfile (project uses pnpm)
+package-lock.json
+
 # Build outputs
 client/dist/
 server/dist/
