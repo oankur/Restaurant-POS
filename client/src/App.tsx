@@ -19,6 +19,7 @@ import OperatorKDS from './pages/Operator/KDS';
 import ZomatoOrders from './pages/Operator/ZomatoOrders';
 import SwiggyOrders from './pages/Operator/SwiggyOrders';
 import BillingPage from './pages/Operator/Billing';
+import OutletReports from './pages/Operator/OutletReports';
 
 // Outlet manager pages
 import MenuPage from './pages/OutletAdmin/Menu';
@@ -68,6 +69,7 @@ export default function App() {
               <Route path="zomato" element={<ZomatoOrders />} />
               <Route path="swiggy" element={<SwiggyOrders />} />
               <Route path="billing/:orderId" element={<BillingPage />} />
+              <Route path="reports" element={<OutletReports />} />
               {/* Manager mode pages */}
               <Route path="menu" element={<MenuPage />} />
               <Route path="categories" element={<CategoriesPage />} />

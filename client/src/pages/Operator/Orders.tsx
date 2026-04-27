@@ -1,6 +1,7 @@
 import { useEffect, useState, useMemo, useCallback } from 'react';
 import {
   getOrders, getMenu, getTables, createOrder, updateOrderStatus, cancelOrder, generateBill,
+  getOutlet,
 } from '../../api';
 import { useAuthStore } from '../../store/authStore';
 import { socket, joinOutlet } from '../../utils/socket';
@@ -52,6 +53,10 @@ export default function OperatorOrders() {
   const [placingOrder, setPlacingOrder] = useState(false);
   const [lastOrder, setLastOrder] = useState<Order | null>(null);
 
+  // Tax settings
+  const [taxEnabled, setTaxEnabled] = useState(true);
+  const [taxRate, setTaxRate] = useState(0.05);
+
   // UI state
   const [activeCategory, setActiveCategory] = useState('All');
   const [search, setSearch] = useState('');
@@ -61,9 +66,11 @@ export default function OperatorOrders() {
 
   useEffect(() => {
     joinOutlet(outletId);
-    Promise.all([load(), getMenu(outletId), getTables(outletId)]).then(([_, m, t]) => {
+    Promise.all([load(), getMenu(outletId), getTables(outletId), getOutlet(outletId)]).then(([_, m, t, outlet]) => {
       setMenuItems(m);
       setTables(t);
+      setTaxEnabled(outlet.taxEnabled);
+      setTaxRate(outlet.taxRate);
     });
     socket.on('new_order', (order: Order) => {
       setOrders((prev) => [order, ...prev]);
@@ -93,7 +100,7 @@ export default function OperatorOrders() {
   };
 
   const subtotal = useMemo(() => cart.reduce((s, c) => s + c.menuItem.price * c.quantity, 0), [cart]);
-  const tax = subtotal * 0.05;
+  const tax = taxEnabled ? subtotal * taxRate : 0;
   const total = subtotal + tax;
 
   // ─── Place order ─────────────────────────────────────
@@ -410,9 +417,11 @@ export default function OperatorOrders() {
               <div className="flex justify-between text-sm text-gray-600">
                 <span>Sub Total</span><span>₹{subtotal.toFixed(2)}</span>
               </div>
-              <div className="flex justify-between text-sm text-gray-600">
-                <span>GST (5%)</span><span>₹{tax.toFixed(2)}</span>
-              </div>
+              {taxEnabled && (
+                <div className="flex justify-between text-sm text-gray-600">
+                  <span>GST ({(taxRate * 100).toFixed(0)}%)</span><span>₹{tax.toFixed(2)}</span>
+                </div>
+              )}
               <div className="flex justify-between items-center pt-2 border-t border-gray-100">
                 <span className="font-bold text-gray-900">Total Amount</span>
                 <span className="font-bold text-xl text-primary-500">₹{total.toFixed(2)}</span>

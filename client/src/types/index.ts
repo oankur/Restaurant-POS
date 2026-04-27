@@ -39,6 +39,7 @@ export interface Outlet {
   isActive: boolean;
   username: string;
   taxRate: number;
+  taxEnabled: boolean;
   createdAt: string;
 }
 

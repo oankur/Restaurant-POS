@@ -3,7 +3,7 @@ generator client {
 }
 
 datasource db {
-  provider = "postgresql"
+  provider = "sqlite"
   url      = env("DATABASE_URL")
 }
 
@@ -28,6 +28,7 @@ model Outlet {
   password        String
   managerPassword String
   taxRate         Float      @default(0.05)
+  taxEnabled      Boolean    @default(true)
   menuItems       MenuItem[]
   tables          Table[]
   orders          Order[]
@@ -103,6 +104,11 @@ model OrderItem {
   quantity   Int
   price      Float
   notes      String?
+}
+
+model GlobalSettings {
+  id         String  @id @default("global")
+  taxEnabled Boolean @default(true)
 }
 
 model Bill {

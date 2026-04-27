@@ -15,8 +15,8 @@ async function createDeliveryOrder(
   customerPhone: string,
   externalId: string,
 ) {
-  const outlet = await prisma.outlet.findUnique({ where: { id: outletId }, select: { taxRate: true } });
-  const taxRate = outlet?.taxRate ?? 0.05;
+  const outlet = await prisma.outlet.findUnique({ where: { id: outletId }, select: { taxRate: true, taxEnabled: true } });
+  const taxRate = outlet?.taxEnabled !== false ? (outlet?.taxRate ?? 0.05) : 0;
 
   const orderItems = items.map((item) => ({
     itemName: item.name,

@@ -12,14 +12,14 @@ router.get('/', async (req: AuthRequest, res: Response) => {
     if (req.auth?.type === 'admin') {
       const outlets = await prisma.outlet.findMany({
         orderBy: { createdAt: 'desc' },
-        select: { id: true, name: true, address: true, phone: true, isActive: true, username: true, taxRate: true, createdAt: true },
+        select: { id: true, name: true, address: true, phone: true, isActive: true, username: true, taxRate: true, taxEnabled: true, createdAt: true },
       });
       return res.json(outlets);
     }
     if (req.auth?.type === 'outlet') {
       const outlet = await prisma.outlet.findUnique({
         where: { id: req.auth.outletId },
-        select: { id: true, name: true, address: true, phone: true, isActive: true, username: true, taxRate: true, createdAt: true },
+        select: { id: true, name: true, address: true, phone: true, isActive: true, username: true, taxRate: true, taxEnabled: true, createdAt: true },
       });
       return res.json(outlet ? [outlet] : []);
     }
@@ -33,7 +33,7 @@ router.get('/:id', async (req: AuthRequest, res: Response) => {
   try {
     const outlet = await prisma.outlet.findUnique({
       where: { id: req.params.id },
-      select: { id: true, name: true, address: true, phone: true, isActive: true, username: true, taxRate: true, createdAt: true },
+      select: { id: true, name: true, address: true, phone: true, isActive: true, username: true, taxRate: true, taxEnabled: true, createdAt: true },
     });
     if (!outlet) return res.status(404).json({ message: 'Outlet not found' });
     res.json(outlet);
@@ -57,7 +57,7 @@ router.post('/', requireAdmin, async (req: AuthRequest, res: Response) => {
         password: await bcrypt.hash(password, 10),
         managerPassword: await bcrypt.hash(managerPassword, 10),
       },
-      select: { id: true, name: true, address: true, phone: true, isActive: true, username: true, taxRate: true, createdAt: true },
+      select: { id: true, name: true, address: true, phone: true, isActive: true, username: true, taxRate: true, taxEnabled: true, createdAt: true },
     });
     res.status(201).json(outlet);
   } catch (err: any) {
@@ -75,7 +75,7 @@ router.put('/:id', requireAdmin, async (req: AuthRequest, res: Response) => {
     const outlet = await prisma.outlet.update({
       where: { id: req.params.id },
       data,
-      select: { id: true, name: true, address: true, phone: true, isActive: true, username: true, taxRate: true, createdAt: true },
+      select: { id: true, name: true, address: true, phone: true, isActive: true, username: true, taxRate: true, taxEnabled: true, createdAt: true },
     });
     res.json(outlet);
   } catch {
@@ -83,9 +83,9 @@ router.put('/:id', requireAdmin, async (req: AuthRequest, res: Response) => {
   }
 });
 
-// Update tax rate — allowed for outlet manager (own outlet) or admin
+// Update tax settings — allowed for outlet manager (own outlet) or admin
 router.put('/:id/settings', async (req: AuthRequest, res: Response) => {
-  const { taxRate } = req.body;
+  const { taxRate, taxEnabled } = req.body;
   const auth = req.auth!;
 
   if (auth.type === 'outlet') {
@@ -95,11 +95,15 @@ router.put('/:id/settings', async (req: AuthRequest, res: Response) => {
     return res.status(403).json({ message: 'Access denied' });
   }
 
+  const data: any = {};
+  if (taxRate !== undefined) data.taxRate = parseFloat(taxRate);
+  if (taxEnabled !== undefined) data.taxEnabled = taxEnabled;
+
   try {
     const outlet = await prisma.outlet.update({
       where: { id: req.params.id },
-      data: { taxRate: parseFloat(taxRate) },
-      select: { id: true, name: true, taxRate: true },
+      data,
+      select: { id: true, name: true, taxRate: true, taxEnabled: true },
     });
     res.json(outlet);
   } catch {

@@ -85,7 +85,7 @@ export function printBill(order: Order, bill: Bill) {
       </div>`).join('')}
     <div class="divider"></div>
     <div class="row"><span>Subtotal</span><span>₹${bill.subtotal.toFixed(2)}</span></div>
-    <div class="row"><span>GST (5%)</span><span>₹${bill.tax.toFixed(2)}</span></div>
+    ${bill.tax > 0 ? `<div class="row"><span>GST</span><span>₹${bill.tax.toFixed(2)}</span></div>` : ''}
     <div class="divider"></div>
     <div class="row bold lg"><span>TOTAL</span><span>₹${bill.total.toFixed(2)}</span></div>
     <div class="divider"></div>

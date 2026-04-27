@@ -125,10 +125,12 @@ export default function BillingPage() {
                 <span className="text-gray-500">Subtotal</span>
                 <span>₹{order.subtotal.toFixed(2)}</span>
               </div>
-              <div className="flex justify-between">
-                <span className="text-gray-500">GST (5%)</span>
-                <span>₹{order.tax.toFixed(2)}</span>
-              </div>
+              {order.tax > 0 && (
+                <div className="flex justify-between">
+                  <span className="text-gray-500">GST</span>
+                  <span>₹{order.tax.toFixed(2)}</span>
+                </div>
+              )}
             </div>
 
             <div className="border-t border-dashed border-gray-400 my-2" />

@@ -18,6 +18,7 @@ import billingRoutes from './routes/billing';
 import reportRoutes from './routes/reports';
 import integrationRoutes from './routes/integrations';
 import categoryRoutes from './routes/categories';
+import settingsRoutes from './routes/settings';
 
 export const prisma = new PrismaClient();
 
@@ -56,6 +57,7 @@ app.use('/api/billing', billingRoutes);
 app.use('/api/reports', reportRoutes);
 app.use('/api/integrations', integrationRoutes);
 app.use('/api/categories', categoryRoutes);
+app.use('/api/settings', settingsRoutes);
 
 setupSocket(io);
 

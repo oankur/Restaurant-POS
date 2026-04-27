@@ -13,8 +13,8 @@ export const createOutlet = (data: { name: string; address: string; phone: strin
 export const updateOutlet = (id: string, data: Partial<Outlet> & { password?: string; managerPassword?: string }) =>
   api.put<Outlet>(`/outlets/${id}`, data).then((r) => r.data);
 export const deleteOutlet = (id: string) => api.delete(`/outlets/${id}`).then((r) => r.data);
-export const updateOutletSettings = (id: string, taxRate: number) =>
-  api.put(`/outlets/${id}/settings`, { taxRate }).then((r) => r.data);
+export const updateOutletSettings = (id: string, data: { taxRate?: number; taxEnabled?: boolean }) =>
+  api.put(`/outlets/${id}/settings`, data).then((r) => r.data);
 
 // Menu
 export const getMenu = (outletId: string) => api.get<MenuItem[]>(`/menu/${outletId}`).then((r) => r.data);
@@ -53,6 +53,12 @@ export const getCategories = (outletId: string) => api.get<Category[]>(`/categor
 export const createCategory = (name: string, outletId: string) => api.post<Category>('/categories', { name, outletId }).then((r) => r.data);
 export const updateCategory = (id: string, name: string) => api.put<Category>(`/categories/${id}`, { name }).then((r) => r.data);
 export const deleteCategory = (id: string) => api.delete(`/categories/${id}`).then((r) => r.data);
+
+// Global settings
+export const getGlobalSettings = () =>
+  api.get<{ id: string; taxEnabled: boolean }>('/settings').then((r) => r.data);
+export const updateGlobalSettings = (taxEnabled: boolean) =>
+  api.put<{ id: string; taxEnabled: boolean }>('/settings', { taxEnabled }).then((r) => r.data);
 
 // Integrations
 export const simulateOrder = (outletId: string, source: 'ZOMATO' | 'SWIGGY') =>

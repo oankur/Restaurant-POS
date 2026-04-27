@@ -87,6 +87,7 @@ export default function Sidebar() {
     { to: '/outlet/kds', label: 'Kitchen' },
     { to: '/outlet/zomato', label: 'Zomato', accent: 'text-red-400' },
     { to: '/outlet/swiggy', label: 'Swiggy', accent: 'text-orange-400' },
+    { to: '/outlet/reports', label: 'Reports' },
   ];
 
   const managerLinks = [

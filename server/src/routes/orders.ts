@@ -46,8 +46,8 @@ router.get('/:id', async (req: AuthRequest, res: Response) => {
 router.post('/', async (req: AuthRequest, res: Response) => {
   const { outletId, type, tableId, items, customerName, customerPhone, notes, source } = req.body;
   try {
-    const outlet = await prisma.outlet.findUnique({ where: { id: outletId }, select: { taxRate: true } });
-    const taxRate = outlet?.taxRate ?? 0.05;
+    const outlet = await prisma.outlet.findUnique({ where: { id: outletId }, select: { taxRate: true, taxEnabled: true } });
+    const taxRate = outlet?.taxEnabled !== false ? (outlet?.taxRate ?? 0.05) : 0;
 
     const menuItems = await prisma.menuItem.findMany({
       where: { id: { in: items.map((i: any) => i.menuItemId) } },
