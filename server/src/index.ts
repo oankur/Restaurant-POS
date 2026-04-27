@@ -45,6 +45,7 @@ const corsOptions = {
 
 export const io = new Server(httpServer, { cors: corsOptions });
 
+app.options('*', cors(corsOptions));
 app.use(cors(corsOptions));
 app.use(express.json());
 
