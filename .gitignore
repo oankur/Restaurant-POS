@@ -3,8 +3,8 @@ node_modules/
 client/node_modules/
 server/node_modules/
 
-# npm lockfile (project uses pnpm)
-package-lock.json
+# pnpm lockfile at root only
+/pnpm-lock.yaml
 
 # Build outputs
 client/dist/

@@ -7,6 +7,9 @@ import dotenv from 'dotenv';
 
 dotenv.config();
 
+process.on('uncaughtException', (err) => { console.error('Uncaught Exception:', err); process.exit(1); });
+process.on('unhandledRejection', (err) => { console.error('Unhandled Rejection:', err); process.exit(1); });
+
 import { config } from './config';
 import { setupSocket } from './socket';
 import authRoutes from './routes/auth';
@@ -44,6 +47,8 @@ const corsOptions = {
 };
 
 export const io = new Server(httpServer, { cors: corsOptions });
+
+app.get('/health', (_req, res) => res.json({ status: 'ok' }));
 
 app.options('*', cors(corsOptions));
 app.use(cors(corsOptions));
