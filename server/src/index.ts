@@ -62,7 +62,7 @@ app.use('/api/settings', settingsRoutes);
 
 setupSocket(io);
 
-httpServer.listen(config.port, () => {
+httpServer.listen(config.port, '0.0.0.0', () => {
   console.log(`\n🍽️  Restaurant POS Server`);
   console.log(`   Running on http://localhost:${config.port}`);
   console.log(`   Client: ${config.clientUrl}\n`);
