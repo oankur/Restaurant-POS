@@ -12,8 +12,8 @@ CREATE TABLE "new_Outlet" (
     "managerPassword" TEXT NOT NULL,
     "taxRate" REAL NOT NULL DEFAULT 0.05,
     "taxEnabled" BOOLEAN NOT NULL DEFAULT true,
-    "createdAt" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    "updatedAt" DATETIME NOT NULL
+    "createdAt" TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updatedAt" TIMESTAMP NOT NULL
 );
 INSERT INTO "new_Outlet" ("address", "createdAt", "id", "isActive", "managerPassword", "name", "password", "phone", "taxRate", "updatedAt", "username") SELECT "address", "createdAt", "id", "isActive", "managerPassword", "name", "password", "phone", "taxRate", "updatedAt", "username" FROM "Outlet";
 DROP TABLE "Outlet";

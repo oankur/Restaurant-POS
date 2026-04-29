@@ -20,8 +20,8 @@ CREATE TABLE "new_Outlet" (
     "password" TEXT NOT NULL,
     "managerPassword" TEXT NOT NULL,
     "taxRate" REAL NOT NULL DEFAULT 0.05,
-    "createdAt" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    "updatedAt" DATETIME NOT NULL
+    "createdAt" TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updatedAt" TIMESTAMP NOT NULL
 );
 INSERT INTO "new_Outlet" ("address", "createdAt", "id", "isActive", "name", "phone", "updatedAt") SELECT "address", "createdAt", "id", "isActive", "name", "phone", "updatedAt" FROM "Outlet";
 DROP TABLE "Outlet";
@@ -34,8 +34,8 @@ CREATE TABLE "new_User" (
     "password" TEXT NOT NULL,
     "role" TEXT NOT NULL DEFAULT 'SUPER_ADMIN',
     "isActive" BOOLEAN NOT NULL DEFAULT true,
-    "createdAt" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    "updatedAt" DATETIME NOT NULL
+    "createdAt" TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updatedAt" TIMESTAMP NOT NULL
 );
 INSERT INTO "new_User" ("createdAt", "email", "id", "isActive", "name", "password", "role", "updatedAt") SELECT "createdAt", "email", "id", "isActive", "name", "password", "role", "updatedAt" FROM "User";
 DROP TABLE "User";
