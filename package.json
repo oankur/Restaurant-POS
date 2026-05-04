@@ -1,10 +1,9 @@
 {
   "name": "restaurant-pos",
   "version": "1.0.0",
-  "workspaces": ["server", "client"],
   "scripts": {
-    "dev": "concurrently \"npm run dev -w restaurant-pos-server\" \"npm run dev -w restaurant-pos-client\"",
-    "setup": "npm install"
+    "dev": "concurrently \"npm run dev --prefix server\" \"npm run dev --prefix client\"",
+    "setup": "npm install --prefix server && npm install --prefix client"
   },
   "devDependencies": {
     "concurrently": "^8.2.0",
