@@ -32,6 +32,7 @@ const allowedOrigins = [
   'http://localhost:5050',
   'http://localhost:5173',
   'https://restaurant-pos-61y5.vercel.app',
+  'https://restaurant-pos-final.vercel.app',
   ...(process.env.CLIENT_URL ? process.env.CLIENT_URL.split(',').map(s => s.trim()) : []),
 ];
 
