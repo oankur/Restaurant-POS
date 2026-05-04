@@ -18,6 +18,7 @@ import AllOrders from './pages/Operator/AllOrders';
 import OperatorKDS from './pages/Operator/KDS';
 import ZomatoOrders from './pages/Operator/ZomatoOrders';
 import SwiggyOrders from './pages/Operator/SwiggyOrders';
+import ToingOrders from './pages/Operator/ToingOrders';
 import BillingPage from './pages/Operator/Billing';
 import OutletReports from './pages/Operator/OutletReports';
 
@@ -26,6 +27,7 @@ import MenuPage from './pages/OutletAdmin/Menu';
 import TablesPage from './pages/OutletAdmin/Tables';
 import TaxSettings from './pages/OutletAdmin/TaxSettings';
 import CategoriesPage from './pages/OutletAdmin/Categories';
+import SubCategoriesPage from './pages/OutletAdmin/SubCategories';
 
 function HomeRedirect() {
   const { session } = useAuthStore();
@@ -68,11 +70,13 @@ export default function App() {
               <Route path="kds" element={<OperatorKDS />} />
               <Route path="zomato" element={<ZomatoOrders />} />
               <Route path="swiggy" element={<SwiggyOrders />} />
+              <Route path="toing" element={<ToingOrders />} />
               <Route path="billing/:orderId" element={<BillingPage />} />
               <Route path="reports" element={<OutletReports />} />
               {/* Manager mode pages */}
               <Route path="menu" element={<MenuPage />} />
               <Route path="categories" element={<CategoriesPage />} />
+              <Route path="sub-categories" element={<SubCategoriesPage />} />
               <Route path="tables" element={<TablesPage />} />
               <Route path="settings" element={<TaxSettings />} />
               <Route path="*" element={<Navigate to="/outlet/home" replace />} />

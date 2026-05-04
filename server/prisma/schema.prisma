@@ -29,15 +29,30 @@ model Outlet {
   managerPassword String
   taxRate         Float      @default(0.05)
   taxEnabled      Boolean    @default(true)
+  kitchenEnabled  Boolean    @default(true)
+  swiggyOutletId  String?    @unique
+  zomatoOutletId  String?    @unique
+  toingOutletId   String?    @unique
   menuItems       MenuItem[]
   tables          Table[]
   orders          Order[]
   categories      Category[]
+  subCategories   SubCategory[]
   createdAt       DateTime   @default(now())
   updatedAt       DateTime   @updatedAt
 }
 
 model Category {
+  id        String   @id @default(cuid())
+  name      String
+  outletId  String
+  outlet    Outlet   @relation(fields: [outletId], references: [id])
+  createdAt DateTime @default(now())
+
+  @@unique([name, outletId])
+}
+
+model SubCategory {
   id        String   @id @default(cuid())
   name      String
   outletId  String
@@ -53,6 +68,7 @@ model MenuItem {
   description String?
   price       Float
   category    String
+  subCategory String?
   isAvailable Boolean     @default(true)
   outletId    String
   outlet      Outlet      @relation(fields: [outletId], references: [id])
@@ -74,6 +90,7 @@ model Table {
 model Order {
   id            String      @id @default(cuid())
   orderNumber   String      @unique
+  dailySequence Int         @default(1)
   type          String
   status        String      @default("PENDING")
   source        String      @default("OFFLINE")

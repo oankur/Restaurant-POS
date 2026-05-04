@@ -12,14 +12,14 @@ router.get('/', async (req: AuthRequest, res: Response) => {
     if (req.auth?.type === 'admin') {
       const outlets = await prisma.outlet.findMany({
         orderBy: { createdAt: 'desc' },
-        select: { id: true, name: true, address: true, phone: true, isActive: true, username: true, taxRate: true, taxEnabled: true, createdAt: true },
+        select: { id: true, name: true, address: true, phone: true, isActive: true, username: true, taxRate: true, taxEnabled: true, kitchenEnabled: true, swiggyOutletId: true, zomatoOutletId: true, toingOutletId: true, createdAt: true },
       });
       return res.json(outlets);
     }
     if (req.auth?.type === 'outlet') {
       const outlet = await prisma.outlet.findUnique({
         where: { id: req.auth.outletId },
-        select: { id: true, name: true, address: true, phone: true, isActive: true, username: true, taxRate: true, taxEnabled: true, createdAt: true },
+        select: { id: true, name: true, address: true, phone: true, isActive: true, username: true, taxRate: true, taxEnabled: true, kitchenEnabled: true, swiggyOutletId: true, zomatoOutletId: true, toingOutletId: true, createdAt: true },
       });
       return res.json(outlet ? [outlet] : []);
     }
@@ -33,7 +33,7 @@ router.get('/:id', async (req: AuthRequest, res: Response) => {
   try {
     const outlet = await prisma.outlet.findUnique({
       where: { id: req.params.id },
-      select: { id: true, name: true, address: true, phone: true, isActive: true, username: true, taxRate: true, taxEnabled: true, createdAt: true },
+      select: { id: true, name: true, address: true, phone: true, isActive: true, username: true, taxRate: true, taxEnabled: true, kitchenEnabled: true, swiggyOutletId: true, zomatoOutletId: true, toingOutletId: true, createdAt: true },
     });
     if (!outlet) return res.status(404).json({ message: 'Outlet not found' });
     res.json(outlet);
@@ -57,7 +57,7 @@ router.post('/', requireAdmin, async (req: AuthRequest, res: Response) => {
         password: await bcrypt.hash(password, 10),
         managerPassword: await bcrypt.hash(managerPassword, 10),
       },
-      select: { id: true, name: true, address: true, phone: true, isActive: true, username: true, taxRate: true, taxEnabled: true, createdAt: true },
+      select: { id: true, name: true, address: true, phone: true, isActive: true, username: true, taxRate: true, taxEnabled: true, kitchenEnabled: true, swiggyOutletId: true, zomatoOutletId: true, toingOutletId: true, createdAt: true },
     });
     res.status(201).json(outlet);
   } catch (err: any) {
@@ -67,15 +67,18 @@ router.post('/', requireAdmin, async (req: AuthRequest, res: Response) => {
 });
 
 router.put('/:id', requireAdmin, async (req: AuthRequest, res: Response) => {
-  const { name, address, phone, isActive, password, managerPassword } = req.body;
+  const { name, address, phone, isActive, password, managerPassword, swiggyOutletId, zomatoOutletId, toingOutletId } = req.body;
   try {
     const data: any = { name, address, phone, isActive };
     if (password?.trim()) data.password = await bcrypt.hash(password, 10);
     if (managerPassword?.trim()) data.managerPassword = await bcrypt.hash(managerPassword, 10);
+    data.swiggyOutletId = swiggyOutletId?.trim() || null;
+    data.zomatoOutletId = zomatoOutletId?.trim() || null;
+    data.toingOutletId  = toingOutletId?.trim()  || null;
     const outlet = await prisma.outlet.update({
       where: { id: req.params.id },
       data,
-      select: { id: true, name: true, address: true, phone: true, isActive: true, username: true, taxRate: true, taxEnabled: true, createdAt: true },
+      select: { id: true, name: true, address: true, phone: true, isActive: true, username: true, taxRate: true, taxEnabled: true, kitchenEnabled: true, swiggyOutletId: true, zomatoOutletId: true, toingOutletId: true, createdAt: true },
     });
     res.json(outlet);
   } catch {
@@ -83,9 +86,9 @@ router.put('/:id', requireAdmin, async (req: AuthRequest, res: Response) => {
   }
 });
 
-// Update tax settings — allowed for outlet manager (own outlet) or admin
+// Update outlet settings — allowed for outlet manager (own outlet) or admin
 router.put('/:id/settings', async (req: AuthRequest, res: Response) => {
-  const { taxRate, taxEnabled } = req.body;
+  const { taxRate, taxEnabled, kitchenEnabled } = req.body;
   const auth = req.auth!;
 
   if (auth.type === 'outlet') {
@@ -98,12 +101,13 @@ router.put('/:id/settings', async (req: AuthRequest, res: Response) => {
   const data: any = {};
   if (taxRate !== undefined) data.taxRate = parseFloat(taxRate);
   if (taxEnabled !== undefined) data.taxEnabled = taxEnabled;
+  if (kitchenEnabled !== undefined) data.kitchenEnabled = kitchenEnabled;
 
   try {
     const outlet = await prisma.outlet.update({
       where: { id: req.params.id },
       data,
-      select: { id: true, name: true, taxRate: true, taxEnabled: true },
+      select: { id: true, name: true, taxRate: true, taxEnabled: true, kitchenEnabled: true },
     });
     res.json(outlet);
   } catch {

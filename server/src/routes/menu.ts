@@ -19,11 +19,11 @@ router.get('/:outletId', async (req: AuthRequest, res: Response) => {
 });
 
 router.post('/', requireAdminOrManager, async (req: AuthRequest, res: Response) => {
-  const { name, description, price, category, outletId } = req.body;
+  const { name, description, price, category, subCategory, outletId } = req.body;
   const targetOutlet = outletId || req.auth!.outletId;
   try {
     const item = await prisma.menuItem.create({
-      data: { name, description, price: parseFloat(price), category, outletId: targetOutlet },
+      data: { name, description, price: parseFloat(price), category, subCategory: subCategory || null, outletId: targetOutlet },
     });
     res.status(201).json(item);
   } catch {
@@ -32,11 +32,11 @@ router.post('/', requireAdminOrManager, async (req: AuthRequest, res: Response) 
 });
 
 router.put('/:id', requireAdminOrManager, async (req: AuthRequest, res: Response) => {
-  const { name, description, price, category, isAvailable } = req.body;
+  const { name, description, price, category, subCategory, isAvailable } = req.body;
   try {
     const item = await prisma.menuItem.update({
       where: { id: req.params.id },
-      data: { name, description, price: price ? parseFloat(price) : undefined, category, isAvailable },
+      data: { name, description, price: price ? parseFloat(price) : undefined, category, subCategory: subCategory ?? undefined, isAvailable },
     });
     res.json(item);
   } catch {

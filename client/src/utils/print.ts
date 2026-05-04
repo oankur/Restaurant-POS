@@ -31,7 +31,7 @@ export function printKOT(order: Order, outletName = '') {
     <p class="sub">Kitchen Order Ticket</p>
     ${outletName ? `<p class="sub">${outletName}</p>` : ''}
     <div class="divider"></div>
-    <div class="row"><span class="bold">Order#</span><span>${order.orderNumber.slice(-8)}</span></div>
+    <div class="row"><span class="bold">Order#</span><span>${formatInvoiceId(order, order.dailySequence)}</span></div>
     <div class="row"><span class="bold">Type</span><span>${order.type.replace('_', ' ')}${order.table ? ` · T${order.table.number}` : ''}</span></div>
     <div class="row"><span class="bold">Source</span><span>${order.source}</span></div>
     <div class="row"><span class="bold">Time</span><span>${new Date().toLocaleTimeString()}</span></div>
@@ -41,7 +41,7 @@ export function printKOT(order: Order, outletName = '') {
     ${order.items.map(i => `
       <div class="row">
         <span style="width:28px;">${i.quantity}x</span>
-        <span style="flex:1;padding-left:8px;">${i.itemName ?? i.menuItem?.name}${i.notes ? `<br><span style="font-size:10px;color:#666;">${i.notes}</span>` : ''}</span>
+        <span style="flex:1;padding-left:8px;">${i.itemName ?? i.menuItem?.name}${i.menuItem?.subCategory ? `<br><span style="font-size:10px;color:#666;">${i.menuItem.subCategory}</span>` : ''}${i.notes ? `<br><span style="font-size:10px;color:#666;">${i.notes}</span>` : ''}</span>
       </div>`).join('')}
     ${order.notes ? `<div class="divider"></div><div class="row"><span class="bold">Note:</span><span>${order.notes}</span></div>` : ''}
     <div class="divider"></div>
@@ -78,8 +78,8 @@ export function printBill(order: Order, bill: Bill) {
     <div class="row bold"><span style="flex:1">Item</span><span style="width:28px;text-align:center;">Qty</span><span style="width:55px;text-align:right;">Total</span></div>
     <div class="divider"></div>
     ${order.items.map(i => `
-      <div class="row">
-        <span style="flex:1">${i.itemName ?? i.menuItem?.name}</span>
+      <div class="row" style="align-items:flex-start;">
+        <span style="flex:1">${i.itemName ?? i.menuItem?.name}${i.menuItem?.subCategory ? `<br><span style="font-size:10px;color:#888;">${i.menuItem.subCategory}</span>` : ''}</span>
         <span style="width:28px;text-align:center;">${i.quantity}</span>
         <span style="width:55px;text-align:right;">₹${(i.price * i.quantity).toFixed(0)}</span>
       </div>`).join('')}

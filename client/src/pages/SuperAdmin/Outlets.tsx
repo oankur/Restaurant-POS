@@ -3,7 +3,10 @@ import { getOutlets, createOutlet, updateOutlet, deleteOutlet } from '../../api'
 import type { Outlet } from '../../types';
 import toast from 'react-hot-toast';
 
-const emptyForm = { name: '', address: '', phone: '', username: '', password: '', managerPassword: '' };
+const emptyForm = {
+  name: '', address: '', phone: '', username: '', password: '', managerPassword: '',
+  swiggyOutletId: '', zomatoOutletId: '', toingOutletId: '',
+};
 
 export default function AdminOutlets() {
   const [outlets, setOutlets] = useState<Outlet[]>([]);
@@ -20,7 +23,11 @@ export default function AdminOutlets() {
   const openCreate = () => { setEditing(null); setForm(emptyForm); setShowModal(true); };
   const openEdit = (o: Outlet) => {
     setEditing(o);
-    setForm({ name: o.name, address: o.address, phone: o.phone, username: o.username, password: '', managerPassword: '' });
+    setForm({
+      name: o.name, address: o.address, phone: o.phone, username: o.username,
+      password: '', managerPassword: '',
+      swiggyOutletId: o.swiggyOutletId ?? '', zomatoOutletId: o.zomatoOutletId ?? '', toingOutletId: o.toingOutletId ?? '',
+    });
     setShowModal(true);
   };
 
@@ -29,7 +36,12 @@ export default function AdminOutlets() {
     setLoading(true);
     try {
       if (editing) {
-        const data: any = { name: form.name, address: form.address, phone: form.phone };
+        const data: any = {
+          name: form.name, address: form.address, phone: form.phone,
+          swiggyOutletId: form.swiggyOutletId || null,
+          zomatoOutletId: form.zomatoOutletId || null,
+          toingOutletId:  form.toingOutletId  || null,
+        };
         if (form.password) data.password = form.password;
         if (form.managerPassword) data.managerPassword = form.managerPassword;
         await updateOutlet(editing.id, data);
@@ -55,10 +67,7 @@ export default function AdminOutlets() {
 
   const handleRemove = async () => {
     if (!confirmRemove) return;
-    if (confirmName !== confirmRemove.name) {
-      toast.error('Outlet name does not match');
-      return;
-    }
+    if (confirmName !== confirmRemove.name) { toast.error('Outlet name does not match'); return; }
     try {
       await deleteOutlet(confirmRemove.id);
       toast.success('Outlet permanently deleted');
@@ -93,6 +102,29 @@ export default function AdminOutlets() {
                 Login: <span className="font-mono">{o.username}</span>
                 {' · '}Tax: {(o.taxRate * 100).toFixed(0)}%
               </p>
+              <div className="flex items-center gap-3 mt-1.5">
+                {o.swiggyOutletId ? (
+                  <span className="text-xs bg-orange-50 text-orange-600 border border-orange-200 px-2 py-0.5 rounded-full font-mono">
+                    Swiggy: {o.swiggyOutletId}
+                  </span>
+                ) : (
+                  <span className="text-xs text-gray-300">Swiggy: not mapped</span>
+                )}
+                {o.zomatoOutletId ? (
+                  <span className="text-xs bg-red-50 text-red-600 border border-red-200 px-2 py-0.5 rounded-full font-mono">
+                    Zomato: {o.zomatoOutletId}
+                  </span>
+                ) : (
+                  <span className="text-xs text-gray-300">Zomato: not mapped</span>
+                )}
+                {o.toingOutletId ? (
+                  <span className="text-xs bg-purple-50 text-purple-600 border border-purple-200 px-2 py-0.5 rounded-full font-mono">
+                    Toing: {o.toingOutletId}
+                  </span>
+                ) : (
+                  <span className="text-xs text-gray-300">Toing: not mapped</span>
+                )}
+              </div>
             </div>
             <div className="flex items-center gap-2">
               <button className="btn-secondary text-sm" onClick={() => openEdit(o)}>Edit</button>
@@ -115,7 +147,7 @@ export default function AdminOutlets() {
 
       {showModal && (
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
-          <div className="bg-white rounded-2xl p-6 w-full max-w-md shadow-xl">
+          <div className="bg-white rounded-2xl p-6 w-full max-w-md shadow-xl max-h-[90vh] overflow-y-auto">
             <h2 className="font-semibold text-lg mb-4">{editing ? 'Edit Outlet' : 'New Outlet'}</h2>
             <form onSubmit={handleSubmit} className="space-y-3">
               <div>
@@ -130,6 +162,7 @@ export default function AdminOutlets() {
                 <label className="label">Phone Number</label>
                 <input className="input" placeholder="+91 9876543210" value={form.phone} onChange={(e) => setForm({ ...form, phone: e.target.value })} required />
               </div>
+
               <div className="border-t pt-3">
                 <p className="text-xs text-gray-400 mb-2">Outlet Login Credentials</p>
                 <div className="space-y-3">
@@ -172,6 +205,47 @@ export default function AdminOutlets() {
                   </div>
                 </div>
               </div>
+
+              <div className="border-t pt-3">
+                <p className="text-xs text-gray-400 mb-0.5">Platform Integration IDs</p>
+                <p className="text-xs text-gray-300 mb-3">Copy these from the Swiggy/Zomato partner portal for this branch.</p>
+                <div className="space-y-3">
+                  <div>
+                    <label className="label">
+                      <span className="text-orange-500 font-semibold">Swiggy</span> Outlet ID
+                    </label>
+                    <input
+                      className="input font-mono"
+                      placeholder="e.g. SW-4521 (leave blank if not on Swiggy)"
+                      value={form.swiggyOutletId}
+                      onChange={(e) => setForm({ ...form, swiggyOutletId: e.target.value })}
+                    />
+                  </div>
+                  <div>
+                    <label className="label">
+                      <span className="text-red-500 font-semibold">Zomato</span> Outlet ID
+                    </label>
+                    <input
+                      className="input font-mono"
+                      placeholder="e.g. ZM-8834 (leave blank if not on Zomato)"
+                      value={form.zomatoOutletId}
+                      onChange={(e) => setForm({ ...form, zomatoOutletId: e.target.value })}
+                    />
+                  </div>
+                  <div>
+                    <label className="label">
+                      <span className="text-purple-500 font-semibold">Toing</span> Outlet ID
+                    </label>
+                    <input
+                      className="input font-mono"
+                      placeholder="e.g. TG-2291 (leave blank if not on Toing)"
+                      value={form.toingOutletId}
+                      onChange={(e) => setForm({ ...form, toingOutletId: e.target.value })}
+                    />
+                  </div>
+                </div>
+              </div>
+
               <div className="flex gap-3 pt-2">
                 <button type="button" className="btn-secondary flex-1" onClick={() => setShowModal(false)}>Cancel</button>
                 <button type="submit" className="btn-primary flex-1" disabled={loading}>
@@ -190,9 +264,7 @@ export default function AdminOutlets() {
             <p className="text-sm text-gray-500 mb-1">
               This will permanently delete <span className="font-semibold text-gray-800">{confirmRemove.name}</span> and all its data — menu, tables, orders, and bills. This cannot be undone.
             </p>
-            <p className="text-sm text-gray-500 mt-3 mb-1">
-              Type the outlet name to confirm:
-            </p>
+            <p className="text-sm text-gray-500 mt-3 mb-1">Type the outlet name to confirm:</p>
             <input
               className="input mb-4"
               placeholder={confirmRemove.name}

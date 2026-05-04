@@ -10,3 +10,12 @@ export const joinOutlet = (outletId: string) => {
 export const leaveOutlet = (outletId: string) => {
   socket.emit('leave_outlet', outletId);
 };
+
+export const joinSuperAdmin = () => {
+  if (!socket.connected) socket.connect();
+  socket.emit('join_super_admin');
+};
+
+export const leaveSuperAdmin = () => {
+  socket.emit('leave_super_admin');
+};

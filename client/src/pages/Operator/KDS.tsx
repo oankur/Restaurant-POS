@@ -2,12 +2,11 @@ import { useEffect, useState } from 'react';
 import { getOrders, updateOrderStatus } from '../../api';
 import { useAuthStore } from '../../store/authStore';
 import { socket, joinOutlet } from '../../utils/socket';
+import { formatInvoiceId } from '../../utils/print';
 import type { Order } from '../../types';
 import toast from 'react-hot-toast';
 
 const columns = [
-  { status: 'PENDING', label: 'Pending', color: 'border-yellow-400 bg-yellow-50', headerColor: 'bg-yellow-400' },
-  { status: 'CONFIRMED', label: 'Confirmed', color: 'border-blue-400 bg-blue-50', headerColor: 'bg-blue-400' },
   { status: 'PREPARING', label: 'Preparing', color: 'border-orange-400 bg-orange-50', headerColor: 'bg-orange-400' },
   { status: 'READY', label: 'Ready', color: 'border-green-400 bg-green-50', headerColor: 'bg-green-500' },
 ];
@@ -33,7 +32,7 @@ export default function OperatorKDS() {
 
     socket.on('new_order', (order: Order) => {
       setOrders((prev) => [order, ...prev]);
-      toast.success(`🔔 New order: ${order.orderNumber}`);
+      toast.success(`🔔 New order: ${formatInvoiceId(order, order.dailySequence)}`);
     });
     socket.on('order_updated', (order: Order) => {
       if (['DELIVERED', 'CANCELLED'].includes(order.status)) {
@@ -57,7 +56,7 @@ export default function OperatorKDS() {
         </div>
       </div>
 
-      <div className="grid grid-cols-4 gap-4 h-[calc(100vh-160px)]">
+      <div className="grid grid-cols-2 gap-4 h-[calc(100vh-160px)]">
         {columns.map(({ status, label, color, headerColor }) => {
           const colOrders = orders.filter((o) => o.status === status);
           return (
@@ -70,12 +69,12 @@ export default function OperatorKDS() {
                 {colOrders.map((order) => (
                   <div key={order.id} className="bg-white rounded-lg p-3 shadow-sm">
                     <div className="flex items-center justify-between mb-2">
-                      <span className="font-bold text-sm">{order.orderNumber.split('-').pop()}</span>
+                      <span className="font-bold text-sm">{formatInvoiceId(order, order.dailySequence)}</span>
                       <span className="text-xs text-gray-400">{timeAgo(order.createdAt)}</span>
                     </div>
                     <div className="text-xs text-gray-500 mb-1">
                       {order.type}{order.table ? ` • T${order.table.number}` : ''}
-                      {order.source !== 'OFFLINE' && <span className={`ml-1 px-1.5 py-0.5 rounded text-white text-xs ${order.source === 'ZOMATO' ? 'bg-red-500' : 'bg-orange-500'}`}>{order.source}</span>}
+                      {order.source !== 'OFFLINE' && <span className={`ml-1 px-1.5 py-0.5 rounded text-white text-xs ${order.source === 'ZOMATO' ? 'bg-red-500' : order.source === 'SWIGGY' ? 'bg-orange-500' : 'bg-purple-500'}`}>{order.source}</span>}
                     </div>
                     <div className="space-y-1 mb-3">
                       {order.items.map((item) => (
@@ -86,12 +85,21 @@ export default function OperatorKDS() {
                       ))}
                     </div>
                     <div className="flex gap-1.5">
-                      <button
-                        onClick={() => updateOrderStatus(order.id, 'DELIVERED').then(load)}
-                        className="flex-1 text-xs py-1.5 rounded-lg bg-primary-500 text-white hover:bg-primary-600 font-medium transition-colors"
-                      >
-                        Delivered
-                      </button>
+                      {status === 'PREPARING' ? (
+                        <button
+                          onClick={() => updateOrderStatus(order.id, 'READY').then(load)}
+                          className="flex-1 text-xs py-1.5 rounded-lg bg-green-500 text-white hover:bg-green-600 font-medium transition-colors"
+                        >
+                          Ready
+                        </button>
+                      ) : (
+                        <button
+                          onClick={() => updateOrderStatus(order.id, 'DELIVERED').then(load)}
+                          className="flex-1 text-xs py-1.5 rounded-lg bg-primary-500 text-white hover:bg-primary-600 font-medium transition-colors"
+                        >
+                          Delivered
+                        </button>
+                      )}
                       <button
                         onClick={async () => { await updateOrderStatus(order.id, 'CANCELLED'); load(); }}
                         className="flex-1 text-xs py-1.5 rounded-lg bg-gray-200 text-gray-700 hover:bg-gray-300 font-medium transition-colors"

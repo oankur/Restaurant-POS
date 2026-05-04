@@ -4,7 +4,7 @@ import { useAuthStore } from '../../store/authStore';
 import toast from 'react-hot-toast';
 
 export default function TaxSettings() {
-  const { session } = useAuthStore();
+  const { session, kitchenEnabled, setKitchenEnabled } = useAuthStore();
   const outletId = session?.type === 'outlet' ? session.outletId : '';
   const isManager = session?.type === 'outlet' && session.mode === 'manager';
 
@@ -17,6 +17,7 @@ export default function TaxSettings() {
     getOutlet(outletId).then((outlet) => {
       setTaxRate((outlet.taxRate * 100).toFixed(2));
       setTaxEnabled(outlet.taxEnabled);
+      setKitchenEnabled(outlet.kitchenEnabled);
     });
   }, [outletId]);
 
@@ -30,6 +31,19 @@ export default function TaxSettings() {
     } catch {
       setTaxEnabled(!next);
       toast.error('Failed to update tax setting');
+    }
+  };
+
+  const handleKitchenToggle = async () => {
+    if (!isManager) return;
+    const next = !kitchenEnabled;
+    setKitchenEnabled(next);
+    try {
+      await updateOutletSettings(outletId, { kitchenEnabled: next });
+      toast.success(`Kitchen tab ${next ? 'enabled' : 'disabled'}`);
+    } catch {
+      setKitchenEnabled(!next); // revert on failure
+      toast.error('Failed to update kitchen setting');
     }
   };
 
@@ -53,7 +67,7 @@ export default function TaxSettings() {
 
   return (
     <div className="p-8 max-w-md">
-      <h1 className="text-2xl font-bold mb-1">Tax</h1>
+      <h1 className="text-2xl font-bold mb-1">Settings</h1>
       <p className="text-sm text-gray-500 mb-8">These settings apply to this outlet only.</p>
 
       {!isManager && (
@@ -63,7 +77,30 @@ export default function TaxSettings() {
       )}
 
       <div className="space-y-6">
-        {/* Toggle */}
+        {/* Kitchen toggle */}
+        <div className="bg-white border border-gray-200 rounded-xl px-5 py-4 flex items-center justify-between">
+          <div>
+            <p className="text-sm font-semibold text-gray-800">Kitchen Tab</p>
+            <p className="text-xs text-gray-400 mt-0.5">
+              {kitchenEnabled ? 'Kitchen display is visible to operators' : 'Kitchen tab is hidden from operators'}
+            </p>
+          </div>
+          <button
+            onClick={handleKitchenToggle}
+            disabled={!isManager}
+            className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors duration-200 focus:outline-none disabled:opacity-40 disabled:cursor-not-allowed ${
+              kitchenEnabled ? 'bg-primary-500' : 'bg-gray-300'
+            }`}
+          >
+            <span
+              className={`inline-block h-4 w-4 transform rounded-full bg-white shadow transition-transform duration-200 ${
+                kitchenEnabled ? 'translate-x-6' : 'translate-x-1'
+              }`}
+            />
+          </button>
+        </div>
+
+        {/* Tax toggle */}
         <div className="bg-white border border-gray-200 rounded-xl px-5 py-4 flex items-center justify-between">
           <div>
             <p className="text-sm font-semibold text-gray-800">Tax System</p>
@@ -86,7 +123,7 @@ export default function TaxSettings() {
           </button>
         </div>
 
-        {/* Rate */}
+        {/* Tax rate */}
         <form onSubmit={handleSaveRate} className={`space-y-4 transition-opacity ${taxEnabled ? 'opacity-100' : 'opacity-40 pointer-events-none'}`}>
           <div>
             <label className="label">GST / Tax Rate (%)</label>

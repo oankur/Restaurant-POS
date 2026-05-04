@@ -1,16 +1,22 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { NavLink, useNavigate } from 'react-router-dom';
 import { useAuthStore } from '../../store/authStore';
+import { getOutlet } from '../../api';
 import toast from 'react-hot-toast';
 
 export default function Sidebar() {
-  const { session, loginManager, exitManager, logout } = useAuthStore();
+  const { session, loginManager, exitManager, logout, kitchenEnabled, setKitchenEnabled } = useAuthStore();
   const navigate = useNavigate();
   const [showManagerModal, setShowManagerModal] = useState(false);
   const [managerPassword, setManagerPassword] = useState('');
   const [loading, setLoading] = useState(false);
   const [collapsed, setCollapsed] = useState(false);
 
+  useEffect(() => {
+    if (session?.type === 'outlet') {
+      getOutlet(session.outletId).then((o) => setKitchenEnabled(o.kitchenEnabled));
+    }
+  }, [session]);
 
   const handleManagerLogin = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -84,17 +90,19 @@ export default function Sidebar() {
     { to: '/outlet/home', label: 'Home' },
     { to: '/outlet/pos', label: 'POS' },
     { to: '/outlet/all-orders', label: 'Orders' },
-    { to: '/outlet/kds', label: 'Kitchen' },
+    ...(kitchenEnabled ? [{ to: '/outlet/kds', label: 'Kitchen' }] : []),
     { to: '/outlet/zomato', label: 'Zomato', accent: 'text-red-400' },
     { to: '/outlet/swiggy', label: 'Swiggy', accent: 'text-orange-400' },
+    { to: '/outlet/toing',  label: 'Toing',  accent: 'text-purple-400' },
     { to: '/outlet/reports', label: 'Reports' },
   ];
 
   const managerLinks = [
     { to: '/outlet/menu', label: 'Menu' },
     { to: '/outlet/categories', label: 'Categories' },
+    { to: '/outlet/sub-categories', label: 'Sub-Categories' },
     { to: '/outlet/tables', label: 'Tables' },
-    { to: '/outlet/settings', label: 'Tax' },
+    { to: '/outlet/settings', label: 'Settings' },
   ];
 
   const links = isManager ? managerLinks : operatorLinks;

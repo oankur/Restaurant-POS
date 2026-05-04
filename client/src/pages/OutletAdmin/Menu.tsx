@@ -1,17 +1,20 @@
 import { useEffect, useState } from 'react';
-import { getMenu, createMenuItem, updateMenuItem, deleteMenuItem, getCategories } from '../../api';
+import { getMenu, createMenuItem, updateMenuItem, deleteMenuItem, getCategories, getSubCategories } from '../../api';
 import { useAuthStore } from '../../store/authStore';
+import ConfirmModal from '../../components/ConfirmModal';
 import type { MenuItem } from '../../types';
 import toast from 'react-hot-toast';
 
-const empty = { name: '', description: '', price: '', category: '' };
+const empty = { name: '', description: '', price: '', category: '', subCategory: '' };
 
 export default function OutletAdminMenu() {
   const { session } = useAuthStore();
   const outletId = session?.type === 'outlet' ? session.outletId : '';
   const [items, setItems] = useState<MenuItem[]>([]);
   const [categories, setCategories] = useState<string[]>([]);
+  const [subCategories, setSubCategories] = useState<string[]>([]);
   const [showModal, setShowModal] = useState(false);
+  const [deleteId, setDeleteId] = useState<string | null>(null);
   const [editing, setEditing] = useState<MenuItem | null>(null);
   const [form, setForm] = useState(empty);
   const [filterCat, setFilterCat] = useState('');
@@ -26,20 +29,22 @@ export default function OutletAdminMenu() {
     if (!form.category && cats.length > 0) {
       setForm((f) => ({ ...f, category: f.category || cats[0].name }));
     }
+    getSubCategories(outletId).then((subs) => setSubCategories(subs.map((s) => s.name))).catch(() => {});
   };
   useEffect(() => { if (outletId) load(); }, [outletId]);
 
   const openCreate = () => { setEditing(null); setForm({ ...empty, category: categories[0] || '' }); setShowModal(true); };
-  const openEdit = (m: MenuItem) => { setEditing(m); setForm({ name: m.name, description: m.description || '', price: String(m.price), category: m.category }); setShowModal(true); };
+  const openEdit = (m: MenuItem) => { setEditing(m); setForm({ name: m.name, description: m.description || '', price: String(m.price), category: m.category, subCategory: m.subCategory || '' }); setShowModal(true); };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     try {
+      const payload = { ...form, price: parseFloat(form.price), subCategory: form.subCategory || null };
       if (editing) {
-        await updateMenuItem(editing.id, { ...form, price: parseFloat(form.price) });
+        await updateMenuItem(editing.id, payload);
         toast.success('Item updated');
       } else {
-        await createMenuItem({ ...form, price: parseFloat(form.price), outletId });
+        await createMenuItem({ ...payload, outletId });
         toast.success('Item added');
       }
       setShowModal(false);
@@ -55,8 +60,8 @@ export default function OutletAdminMenu() {
   };
 
   const handleDelete = async (id: string) => {
-    if (!confirm('Delete this item?')) return;
     await deleteMenuItem(id);
+    setDeleteId(null);
     toast.success('Item deleted');
     load();
   };
@@ -95,7 +100,7 @@ export default function OutletAdminMenu() {
               </button>
               <span className="flex-1" />
               <button className="text-xs text-primary-500 hover:text-primary-700 font-medium" onClick={() => openEdit(item)}>Edit</button>
-              <button className="text-xs text-red-400 hover:text-red-600 font-medium" onClick={() => handleDelete(item.id)}>Delete</button>
+              <button className="text-xs text-red-400 hover:text-red-600 font-medium" onClick={() => setDeleteId(item.id)}>Delete</button>
             </div>
           </div>
         ))}
@@ -121,6 +126,19 @@ export default function OutletAdminMenu() {
                   </select>
                 )}
               </div>
+              <div>
+                <label className="label">Sub-Category / Combo Type <span className="text-gray-400 font-normal">(optional)</span></label>
+                {subCategories.length === 0 ? (
+                  <p className="text-xs text-gray-400 bg-gray-50 rounded-lg px-3 py-2">
+                    No sub-categories yet. Add them in the Sub-Categories section.
+                  </p>
+                ) : (
+                  <select className="input" value={form.subCategory} onChange={(e) => setForm({ ...form, subCategory: e.target.value })}>
+                    <option value="">— None —</option>
+                    {subCategories.map((s) => <option key={s} value={s}>{s}</option>)}
+                  </select>
+                )}
+              </div>
               <div className="flex gap-3 pt-2">
                 <button type="button" className="btn-secondary flex-1" onClick={() => setShowModal(false)}>Cancel</button>
                 <button type="submit" className="btn-primary flex-1">Save</button>
@@ -128,6 +146,15 @@ export default function OutletAdminMenu() {
             </form>
           </div>
         </div>
+      )}
+
+      {deleteId && (
+        <ConfirmModal
+          message="Delete this menu item? This cannot be undone."
+          confirmLabel="Delete"
+          onConfirm={() => handleDelete(deleteId)}
+          onCancel={() => setDeleteId(null)}
+        />
       )}
     </div>
   );

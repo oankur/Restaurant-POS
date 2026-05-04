@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { getOrders, updateOrderStatus, cancelOrder } from '../../api';
 import { useAuthStore } from '../../store/authStore';
 import { socket, joinOutlet } from '../../utils/socket';
+import ConfirmModal from '../../components/ConfirmModal';
 import type { Order } from '../../types';
 import toast from 'react-hot-toast';
 
@@ -16,6 +17,7 @@ export default function ZomatoOrders() {
   const outletId = session?.type === 'outlet' ? session.outletId : '';
   const navigate = useNavigate();
   const [orders, setOrders] = useState<Order[]>([]);
+  const [cancelId, setCancelId] = useState<string | null>(null);
 
   const load = () => getOrders(outletId, { source: 'ZOMATO' }).then(setOrders);
 
@@ -30,6 +32,12 @@ export default function ZomatoOrders() {
     });
     return () => { socket.off('new_order'); socket.off('order_updated'); };
   }, [outletId]);
+
+  const handleCancel = async (id: string) => {
+    await cancelOrder(id);
+    setCancelId(null);
+    load();
+  };
 
   return (
     <div className="flex flex-col flex-1 overflow-hidden bg-[#F7F5F2]" style={{ height: '100%' }}>
@@ -79,7 +87,7 @@ export default function ZomatoOrders() {
                       Delivered
                     </button>
                     <button className="flex-shrink-0 bg-[#F7F5F2] hover:bg-gray-200 text-gray-700 py-2 px-4 rounded-lg text-sm font-medium"
-                      onClick={async () => { if (!confirm('Cancel?')) return; await cancelOrder(order.id); load(); }}>
+                      onClick={() => setCancelId(order.id)}>
                       Cancel
                     </button>
                   </>
@@ -101,6 +109,15 @@ export default function ZomatoOrders() {
           )}
         </div>
       </div>
+
+      {cancelId && (
+        <ConfirmModal
+          message="Cancel this order? This cannot be undone."
+          confirmLabel="Cancel Order"
+          onConfirm={() => handleCancel(cancelId)}
+          onCancel={() => setCancelId(null)}
+        />
+      )}
     </div>
   );
 }

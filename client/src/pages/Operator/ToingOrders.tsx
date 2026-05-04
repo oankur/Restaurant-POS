@@ -12,20 +12,20 @@ const statusBadge: Record<string, string> = {
   READY: 'badge-ready', DELIVERED: 'badge-delivered', CANCELLED: 'badge-cancelled',
 };
 
-export default function SwiggyOrders() {
+export default function ToingOrders() {
   const { session } = useAuthStore();
   const outletId = session?.type === 'outlet' ? session.outletId : '';
   const navigate = useNavigate();
   const [orders, setOrders] = useState<Order[]>([]);
   const [cancelId, setCancelId] = useState<string | null>(null);
 
-  const load = () => getOrders(outletId, { source: 'SWIGGY' }).then(setOrders);
+  const load = () => getOrders(outletId, { source: 'TOING' }).then(setOrders);
 
   useEffect(() => {
     joinOutlet(outletId);
     load();
     socket.on('new_order', (order: Order) => {
-      if (order.source === 'SWIGGY') { setOrders((prev) => [order, ...prev]); toast.success('New Swiggy order!'); }
+      if (order.source === 'TOING') { setOrders((prev) => [order, ...prev]); toast.success('New Toing order!'); }
     });
     socket.on('order_updated', (order: Order) => {
       setOrders((prev) => prev.map((o) => (o.id === order.id ? order : o)));
@@ -42,11 +42,11 @@ export default function SwiggyOrders() {
   return (
     <div className="flex flex-col flex-1 overflow-hidden bg-[#F7F5F2]" style={{ height: '100%' }}>
       <header className="bg-white border-b border-gray-200 px-6 py-4 flex items-center gap-3 flex-shrink-0">
-        <div className="w-8 h-8 bg-orange-500 rounded-lg flex items-center justify-center">
-          <span className="text-white font-black text-sm">S</span>
+        <div className="w-8 h-8 bg-purple-500 rounded-lg flex items-center justify-center">
+          <span className="text-white font-black text-sm">T</span>
         </div>
         <div>
-          <h1 className="font-bold text-gray-900">Swiggy Orders</h1>
+          <h1 className="font-bold text-gray-900">Toing Orders</h1>
           <p className="text-xs text-gray-500">Real-time incoming orders</p>
         </div>
         <div className="ml-auto flex items-center gap-2 text-xs text-gray-500">
@@ -61,7 +61,7 @@ export default function SwiggyOrders() {
                 <div>
                   <div className="flex items-center gap-2">
                     <span className="font-bold text-gray-900">{order.orderNumber}</span>
-                    <span className="bg-orange-100 text-orange-700 text-xs px-2 py-0.5 rounded-full font-medium">SWIGGY</span>
+                    <span className="bg-purple-100 text-purple-700 text-xs px-2 py-0.5 rounded-full font-medium">TOING</span>
                     <span className={statusBadge[order.status]}>{order.status}</span>
                   </div>
                   {order.customerName && <div className="text-sm text-gray-500 mt-0.5">{order.customerName} {order.customerPhone && `• ${order.customerPhone}`}</div>}
@@ -104,7 +104,7 @@ export default function SwiggyOrders() {
           {orders.length === 0 && (
             <div className="text-center py-16 text-gray-400">
               <div className="text-5xl mb-3">🛵</div>
-              <div>No Swiggy orders yet</div>
+              <div>No Toing orders yet</div>
             </div>
           )}
         </div>

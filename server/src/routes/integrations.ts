@@ -7,6 +7,13 @@ const router = Router();
 const generateOrderNumber = () =>
   `ORD-${Date.now()}-${Math.random().toString(36).substring(2, 6).toUpperCase()}`;
 
+async function getDailySequence(outletId: string): Promise<number> {
+  const start = new Date();
+  start.setHours(0, 0, 0, 0);
+  const count = await prisma.order.count({ where: { outletId, createdAt: { gte: start } } });
+  return count + 1;
+}
+
 async function createDeliveryOrder(
   outletId: string,
   source: string,
@@ -29,10 +36,13 @@ async function createDeliveryOrder(
   const tax = subtotal * taxRate;
   const total = subtotal + tax;
 
+  const dailySequence = await getDailySequence(outletId);
   return prisma.order.create({
     data: {
       orderNumber: generateOrderNumber(),
+      dailySequence,
       type: 'DELIVERY',
+      status: 'PREPARING',
       source,
       outletId,
       customerName,
@@ -47,13 +57,16 @@ async function createDeliveryOrder(
   });
 }
 
-// Zomato webhook (receives orders from Zomato)
-// Expected payload: { outletId, customerName, customerPhone, externalId, items: [{ name, price, quantity }] }
+// Zomato webhook — payload contains zomato_restaurant_id, mapped to internal outlet
 router.post('/zomato/webhook', async (req: Request, res: Response) => {
-  const { outletId, items, customerName, customerPhone, externalId } = req.body;
+  const { zomato_restaurant_id, order_id, items, customer_name, customer_phone } = req.body;
   try {
-    const order = await createDeliveryOrder(outletId, 'ZOMATO', items, customerName, customerPhone, externalId);
-    getIO().to(outletId).emit('new_order', order);
+    const outlet = await prisma.outlet.findUnique({ where: { zomatoOutletId: zomato_restaurant_id } });
+    if (!outlet) return res.status(404).json({ message: `No outlet mapped to Zomato ID: ${zomato_restaurant_id}` });
+
+    const order = await createDeliveryOrder(outlet.id, 'ZOMATO', items, customer_name, customer_phone, order_id);
+    getIO().to(outlet.id).emit('new_order', order);
+    getIO().to('super_admin').emit('order_activity', { outletId: outlet.id });
     res.status(201).json({ success: true, orderId: order.id });
   } catch (err) {
     console.error(err);
@@ -61,13 +74,16 @@ router.post('/zomato/webhook', async (req: Request, res: Response) => {
   }
 });
 
-// Swiggy webhook (receives orders from Swiggy)
-// Expected payload: { outletId, customerName, customerPhone, externalId, items: [{ name, price, quantity }] }
+// Swiggy webhook — payload contains swiggy_restaurant_id, mapped to internal outlet
 router.post('/swiggy/webhook', async (req: Request, res: Response) => {
-  const { outletId, items, customerName, customerPhone, externalId } = req.body;
+  const { swiggy_restaurant_id, order_id, items, customer_name, customer_phone } = req.body;
   try {
-    const order = await createDeliveryOrder(outletId, 'SWIGGY', items, customerName, customerPhone, externalId);
-    getIO().to(outletId).emit('new_order', order);
+    const outlet = await prisma.outlet.findUnique({ where: { swiggyOutletId: swiggy_restaurant_id } });
+    if (!outlet) return res.status(404).json({ message: `No outlet mapped to Swiggy ID: ${swiggy_restaurant_id}` });
+
+    const order = await createDeliveryOrder(outlet.id, 'SWIGGY', items, customer_name, customer_phone, order_id);
+    getIO().to(outlet.id).emit('new_order', order);
+    getIO().to('super_admin').emit('order_activity', { outletId: outlet.id });
     res.status(201).json({ success: true, orderId: order.id });
   } catch (err) {
     console.error(err);
@@ -75,7 +91,24 @@ router.post('/swiggy/webhook', async (req: Request, res: Response) => {
   }
 });
 
-// Simulate an incoming Zomato/Swiggy order (for testing)
+// Toing webhook — payload contains toing_restaurant_id, mapped to internal outlet
+router.post('/toing/webhook', async (req: Request, res: Response) => {
+  const { toing_restaurant_id, order_id, items, customer_name, customer_phone } = req.body;
+  try {
+    const outlet = await prisma.outlet.findUnique({ where: { toingOutletId: toing_restaurant_id } });
+    if (!outlet) return res.status(404).json({ message: `No outlet mapped to Toing ID: ${toing_restaurant_id}` });
+
+    const order = await createDeliveryOrder(outlet.id, 'TOING', items, customer_name, customer_phone, order_id);
+    getIO().to(outlet.id).emit('new_order', order);
+    getIO().to('super_admin').emit('order_activity', { outletId: outlet.id });
+    res.status(201).json({ success: true, orderId: order.id });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ message: 'Server error' });
+  }
+});
+
+// Simulate an incoming Zomato/Swiggy/Toing order (for testing — uses internal outletId directly)
 router.post('/simulate/:outletId', async (req: Request, res: Response) => {
   const { outletId } = req.params;
   const { source } = req.body;
@@ -93,6 +126,7 @@ router.post('/simulate/:outletId', async (req: Request, res: Response) => {
       `EXT-${Date.now()}`,
     );
     getIO().to(outletId).emit('new_order', order);
+    getIO().to('super_admin').emit('order_activity', { outletId });
     res.status(201).json(order);
   } catch (err) {
     console.error(err);

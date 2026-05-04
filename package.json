@@ -1,12 +1,10 @@
 {
   "name": "restaurant-pos",
   "version": "1.0.0",
+  "workspaces": ["server", "client"],
   "scripts": {
-    "dev": "concurrently \"pnpm --filter restaurant-pos-server dev\" \"pnpm --filter restaurant-pos-client dev\"",
-    "setup": "pnpm install"
-  },
-  "pnpm": {
-    "onlyBuiltDependencies": ["@prisma/client", "@prisma/engines", "better-sqlite3", "esbuild", "prisma"]
+    "dev": "concurrently \"npm run dev -w restaurant-pos-server\" \"npm run dev -w restaurant-pos-client\"",
+    "setup": "npm install"
   },
   "devDependencies": {
     "concurrently": "^8.2.0",

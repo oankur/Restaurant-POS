@@ -11,6 +11,12 @@ export const setupSocket = (socketServer: Server) => {
     socket.on('leave_outlet', (outletId: string) => {
       socket.leave(outletId);
     });
+    socket.on('join_super_admin', () => {
+      socket.join('super_admin');
+    });
+    socket.on('leave_super_admin', () => {
+      socket.leave('super_admin');
+    });
   });
 };
 

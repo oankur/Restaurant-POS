@@ -30,6 +30,7 @@ type DayEntry = {
   OFFLINE: { revenue: number; count: number };
   ZOMATO:  { revenue: number; count: number };
   SWIGGY:  { revenue: number; count: number };
+  TOING:   { revenue: number; count: number };
   total: number;
   orders: number;
 };
@@ -37,7 +38,7 @@ type DayEntry = {
 type ReportData = {
   totalRevenue: number;
   totalOrders: number;
-  avgOrderValue: number;
+
   revenueBySource: Record<string, number>;
   ordersBySource: Record<string, Order[]>;
   dailyBreakdown: Record<string, DayEntry>;
@@ -226,9 +227,10 @@ export default function OutletReports() {
   ];
 
   const sources = [
-    { key: 'OFFLINE', label: 'Offline', color: 'text-gray-700', dotColor: 'bg-gray-400' },
-    { key: 'ZOMATO',  label: 'Zomato',  color: 'text-red-500',  dotColor: 'bg-red-400'  },
+    { key: 'OFFLINE', label: 'Offline', color: 'text-gray-700',   dotColor: 'bg-gray-400'   },
+    { key: 'ZOMATO',  label: 'Zomato',  color: 'text-red-500',    dotColor: 'bg-red-400'    },
     { key: 'SWIGGY',  label: 'Swiggy',  color: 'text-orange-500', dotColor: 'bg-orange-400' },
+    { key: 'TOING',   label: 'Toing',   color: 'text-purple-500', dotColor: 'bg-purple-400' },
   ];
 
   return (
@@ -309,6 +311,7 @@ export default function OutletReports() {
                           <th className="text-right px-4 py-2.5 font-medium text-gray-500">Offline</th>
                           <th className="text-right px-4 py-2.5 font-medium text-red-400">Zomato</th>
                           <th className="text-right px-4 py-2.5 font-medium text-orange-400">Swiggy</th>
+                          <th className="text-right px-4 py-2.5 font-medium text-purple-400">Toing</th>
                           <th className="text-right px-4 py-2.5 font-medium">Orders</th>
                           <th className="text-right px-5 py-2.5 font-medium">Total</th>
                         </tr>
@@ -334,6 +337,11 @@ export default function OutletReports() {
                                 <span>{fmt(day.SWIGGY.revenue)}<span className="text-xs text-gray-400 ml-1">({day.SWIGGY.count})</span></span>
                               ) : <span className="text-gray-300">—</span>}
                             </td>
+                            <td className="px-4 py-3 text-right text-gray-600">
+                              {day.TOING.count > 0 ? (
+                                <span>{fmt(day.TOING.revenue)}<span className="text-xs text-gray-400 ml-1">({day.TOING.count})</span></span>
+                              ) : <span className="text-gray-300">—</span>}
+                            </td>
                             <td className="px-4 py-3 text-right text-gray-500">{day.orders}</td>
                             <td className="px-5 py-3 text-right font-semibold text-gray-800">{day.total > 0 ? fmt(day.total) : <span className="text-gray-300 font-normal">—</span>}</td>
                           </tr>
@@ -345,6 +353,7 @@ export default function OutletReports() {
                           <td className="px-4 py-3 text-right">{fmt(data.revenueBySource?.OFFLINE ?? 0)}</td>
                           <td className="px-4 py-3 text-right">{fmt(data.revenueBySource?.ZOMATO ?? 0)}</td>
                           <td className="px-4 py-3 text-right">{fmt(data.revenueBySource?.SWIGGY ?? 0)}</td>
+                          <td className="px-4 py-3 text-right">{fmt(data.revenueBySource?.TOING ?? 0)}</td>
                           <td className="px-4 py-3 text-right">{data.totalOrders}</td>
                           <td className="px-5 py-3 text-right text-primary-600">{fmt(data.totalRevenue)}</td>
                         </tr>

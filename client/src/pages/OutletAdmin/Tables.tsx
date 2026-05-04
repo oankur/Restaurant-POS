@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { getTables, createTable, updateTable, deleteTable } from '../../api';
 import { useAuthStore } from '../../store/authStore';
+import ConfirmModal from '../../components/ConfirmModal';
 import type { Table } from '../../types';
 import toast from 'react-hot-toast';
 
@@ -15,6 +16,7 @@ export default function OutletAdminTables() {
   const outletId = session?.type === 'outlet' ? session.outletId : '';
   const [tables, setTables] = useState<Table[]>([]);
   const [showModal, setShowModal] = useState(false);
+  const [deleteId, setDeleteId] = useState<string | null>(null);
   const [form, setForm] = useState({ number: '', capacity: '' });
 
   const load = () => getTables(outletId).then(setTables);
@@ -31,8 +33,8 @@ export default function OutletAdminTables() {
   };
 
   const handleDelete = async (id: string) => {
-    if (!confirm('Delete this table?')) return;
     await deleteTable(id);
+    setDeleteId(null);
     toast.success('Table deleted');
     load();
   };
@@ -50,7 +52,7 @@ export default function OutletAdminTables() {
             <div className="text-2xl font-bold">T{table.number}</div>
             <div className="text-xs mt-1">{table.capacity} seats</div>
             <div className="text-xs font-medium mt-2">{table.status}</div>
-            <button className="mt-3 text-xs text-red-400 hover:text-red-600 font-medium" onClick={() => handleDelete(table.id)}>Remove</button>
+            <button className="mt-3 text-xs text-red-400 hover:text-red-600 font-medium" onClick={() => setDeleteId(table.id)}>Remove</button>
           </div>
         ))}
       </div>
@@ -69,6 +71,15 @@ export default function OutletAdminTables() {
             </form>
           </div>
         </div>
+      )}
+
+      {deleteId && (
+        <ConfirmModal
+          message="Remove this table? This cannot be undone."
+          confirmLabel="Remove"
+          onConfirm={() => handleDelete(deleteId)}
+          onCancel={() => setDeleteId(null)}
+        />
       )}
     </div>
   );

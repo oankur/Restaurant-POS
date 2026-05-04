@@ -1,12 +1,13 @@
 import { useEffect, useState, useMemo, useCallback } from 'react';
 import {
-  getOrders, getMenu, getTables, createOrder, updateOrderStatus, cancelOrder, generateBill,
-  getOutlet,
+  getOrders, getMenu, getTables, createOrder, updateOrder, updateOrderStatus, cancelOrder, generateBill,
+  getOutlet, getSubCategories,
 } from '../../api';
 import { useAuthStore } from '../../store/authStore';
 import { socket, joinOutlet } from '../../utils/socket';
 import type { Order, MenuItem, Table, PaymentMode } from '../../types';
-import { printKOT, printBill } from '../../utils/print';
+import { printKOT, printBill, formatInvoiceId } from '../../utils/print';
+import ConfirmModal from '../../components/ConfirmModal';
 import toast from 'react-hot-toast';
 
 const CATEGORY_BG: Record<string, string> = {
@@ -52,6 +53,8 @@ export default function OperatorOrders() {
   const [paymentMode, setPaymentMode] = useState<PaymentMode>('CASH');
   const [placingOrder, setPlacingOrder] = useState(false);
   const [lastOrder, setLastOrder] = useState<Order | null>(null);
+  const [editingOrderId, setEditingOrderId] = useState<string | null>(null);
+  const [cancelId, setCancelId] = useState<string | null>(null);
 
   // Tax settings
   const [taxEnabled, setTaxEnabled] = useState(true);
@@ -59,9 +62,10 @@ export default function OperatorOrders() {
 
   // UI state
   const [activeCategory, setActiveCategory] = useState('All');
+  const [activeSubCategory, setActiveSubCategory] = useState('All');
+  const [allSubCategories, setAllSubCategories] = useState<string[]>([]);
   const [search, setSearch] = useState('');
-  const [orderTab, setOrderTab] = useState<'ALL' | 'ZOMATO' | 'SWIGGY'>('ALL');
-
+  const [orderTab, setOrderTab] = useState<'ALL' | 'ZOMATO' | 'SWIGGY' | 'TOING'>('ALL');
   const load = useCallback(() => getOrders(outletId).then(setOrders), [outletId]);
 
   useEffect(() => {
@@ -72,9 +76,13 @@ export default function OperatorOrders() {
       setTaxEnabled(outlet.taxEnabled);
       setTaxRate(outlet.taxRate);
     });
+    getSubCategories(outletId).then((subs) => setAllSubCategories(subs.map((s) => s.name))).catch(() => {});
     socket.on('new_order', (order: Order) => {
       setOrders((prev) => [order, ...prev]);
       toast.success(`New ${order.source} order!`, { icon: '🔔' });
+      if (order.source !== 'OFFLINE') {
+        printKOT(order, outletName);
+      }
     });
     socket.on('order_updated', (order: Order) => {
       setOrders((prev) => prev.map((o) => (o.id === order.id ? order : o)));
@@ -97,6 +105,7 @@ export default function OperatorOrders() {
   };
   const clearCart = () => {
     setCart([]); setTableId(''); setCustomerName(''); setCustomerPhone(''); setOrderNotes('');
+    setEditingOrderId(null);
   };
 
   const subtotal = useMemo(() => cart.reduce((s, c) => s + c.menuItem.price * c.quantity, 0), [cart]);
@@ -127,6 +136,38 @@ export default function OperatorOrders() {
     finally { setPlacingOrder(false); }
   };
 
+  // ─── Edit order ──────────────────────────────────
+  const handleEditOrder = (order: Order) => {
+    const cartItems = order.items
+      .map((item) => {
+        const menuItem = menuItems.find((m) => m.id === item.menuItemId);
+        if (!menuItem) return null;
+        return { menuItem, quantity: item.quantity };
+      })
+      .filter(Boolean) as { menuItem: MenuItem; quantity: number }[];
+    setCart(cartItems);
+    setOrderType(order.type === 'TAKEAWAY' ? 'TAKEAWAY' : 'DINE_IN');
+    setTableId(order.tableId ?? '');
+    setCustomerName(order.customerName ?? '');
+    setCustomerPhone(order.customerPhone ?? '');
+    setOrderNotes(order.notes ?? '');
+    setEditingOrderId(order.id);
+    setLastOrder(null);
+  };
+
+  const handleUpdateOrder = async () => {
+    if (!cart.length || !editingOrderId) return;
+    setPlacingOrder(true);
+    try {
+      const updated = await updateOrder(editingOrderId, cart.map((c) => ({ menuItemId: c.menuItem.id, quantity: c.quantity })));
+      printKOT(updated, outletName);
+      toast.success('Order updated!');
+      clearCart();
+      load();
+    } catch { toast.error('Failed to update order'); }
+    finally { setPlacingOrder(false); }
+  };
+
   // ─── Print bill directly ──────────────────────────
   const handlePrintBill = async (order: Order) => {
     try {
@@ -138,30 +179,36 @@ export default function OperatorOrders() {
 
   // ─── Menu filtering ────────────────────────────────
   const categories = useMemo(() => ['All', ...new Set(menuItems.map((m) => m.category))], [menuItems]);
+
+  useEffect(() => { setActiveSubCategory('All'); }, [activeCategory]);
+
   const filteredMenu = useMemo(() => menuItems.filter((m) => {
     if (!m.isAvailable) return false;
     if (activeCategory !== 'All' && m.category !== activeCategory) return false;
+    if (activeSubCategory !== 'All' && m.subCategory !== activeSubCategory) return false;
     if (search && !m.name.toLowerCase().includes(search.toLowerCase())) return false;
     return true;
-  }), [menuItems, activeCategory, search]);
+  }), [menuItems, activeCategory, activeSubCategory, search]);
 
   // ─── Live orders filtering ─────────────────────────
   const liveOrders = useMemo(() => orders.filter((o) => {
     if (['DELIVERED', 'CANCELLED'].includes(o.status)) return false;
     if (orderTab === 'ZOMATO') return o.source === 'ZOMATO';
     if (orderTab === 'SWIGGY') return o.source === 'SWIGGY';
+    if (orderTab === 'TOING')  return o.source === 'TOING';
     return true;
   }), [orders, orderTab]);
 
   const availableTables = tables.filter((t) => t.status === 'AVAILABLE');
 
   const handleCancel = async (id: string) => {
-    if (!confirm('Cancel this order?')) return;
     await cancelOrder(id);
+    setCancelId(null);
     load();
   };
 
   return (
+    <>
     <div className="flex flex-col flex-1 overflow-hidden bg-[#F7F5F2]" style={{ height: '100%' }}>
       {/* ── Header ── */}
       <header className="bg-white border-b border-gray-200 px-6 py-3 flex items-center justify-between flex-shrink-0">
@@ -176,8 +223,8 @@ export default function OperatorOrders() {
         {/* ─── CENTER: Menu + Live Orders ─── */}
         <div className="flex-1 flex flex-col overflow-hidden">
 
-          {/* Category tabs + search */}
-          <div className="bg-white border-b border-gray-200 px-4 pt-3 pb-0 flex-shrink-0">
+          {/* Category tabs */}
+          <div className="bg-white border-b border-gray-100 px-4 pt-3 pb-0 flex-shrink-0">
             <div className="flex items-center gap-2 overflow-x-auto pb-3 scrollbar-hide">
               {categories.map((cat) => (
                 <button
@@ -194,6 +241,28 @@ export default function OperatorOrders() {
               ))}
             </div>
           </div>
+
+          {/* Sub-category tabs */}
+          {allSubCategories.length > 0 && (
+            <div className="bg-white border-b border-gray-200 px-4 pt-2 pb-0 flex-shrink-0">
+              <div className="flex items-center gap-2 overflow-x-auto pb-2 scrollbar-hide">
+                <span className="text-xs text-gray-400 font-medium flex-shrink-0">Type:</span>
+                {(['All', ...allSubCategories]).map((sub) => (
+                  <button
+                    key={sub}
+                    onClick={() => setActiveSubCategory(sub)}
+                    className={`flex-shrink-0 px-3 py-1 rounded-full text-xs font-medium transition-colors ${
+                      activeSubCategory === sub
+                        ? 'bg-gray-800 text-white'
+                        : 'bg-[#F7F5F2] text-gray-600 hover:bg-gray-200'
+                    }`}
+                  >
+                    {sub}
+                  </button>
+                ))}
+              </div>
+            </div>
+          )}
 
           {/* Search */}
           <div className="px-4 py-3 bg-[#F7F5F2] flex-shrink-0">
@@ -218,7 +287,12 @@ export default function OperatorOrders() {
                     className="bg-white rounded-xl overflow-hidden shadow-sm border border-gray-100 hover:shadow-md hover:border-primary-300 transition-all text-left"
                   >
                     <div className={`h-16 ${catStyle} flex items-center justify-between px-3 relative`}>
-                      <span className="text-xs font-semibold uppercase tracking-wide opacity-70">{item.category}</span>
+                      <div className="flex flex-col gap-0.5">
+                        <span className="text-xs font-semibold uppercase tracking-wide opacity-70">{item.category}</span>
+                        {item.subCategory && (
+                          <span className="text-[10px] font-medium opacity-55 leading-tight">{item.subCategory}</span>
+                        )}
+                      </div>
                       {inCart && (
                         <span className="w-6 h-6 bg-primary-500 rounded-full text-white text-xs flex items-center justify-center font-bold">
                           {inCart.quantity}
@@ -246,7 +320,7 @@ export default function OperatorOrders() {
                 <span className="ml-2 w-5 h-5 bg-primary-500 text-white text-xs rounded-full flex items-center justify-center font-bold">{liveOrders.length}</span>
               </div>
               <div className="flex items-center gap-1">
-                {(['ALL', 'ZOMATO', 'SWIGGY'] as const).map((tab) => (
+                {(['ALL', 'ZOMATO', 'SWIGGY', 'TOING'] as const).map((tab) => (
                   <button
                     key={tab}
                     onClick={() => setOrderTab(tab)}
@@ -254,6 +328,7 @@ export default function OperatorOrders() {
                       orderTab === tab
                         ? tab === 'ZOMATO' ? 'bg-red-500 text-white'
                           : tab === 'SWIGGY' ? 'bg-primary-500 text-white'
+                          : tab === 'TOING'  ? 'bg-purple-500 text-white'
                           : 'bg-primary-500 text-white'
                         : 'bg-[#F7F5F2] text-gray-600'
                     }`}
@@ -269,7 +344,7 @@ export default function OperatorOrders() {
                 {liveOrders.map((order) => (
                   <div key={order.id} className="bg-gray-50 border border-gray-200 rounded-xl p-3 w-52 flex-shrink-0">
                     <div className="flex items-center justify-between mb-1.5">
-                      <span className="font-bold text-xs text-gray-900">{order.orderNumber.slice(-6)}</span>
+                      <span className="font-bold text-xs text-gray-900">{formatInvoiceId(order, order.dailySequence)}</span>
                       <div className="flex items-center gap-1">
                         {order.source !== 'OFFLINE' && (
                           <span className={`text-white text-xs px-1.5 py-0.5 rounded font-bold ${order.source === 'ZOMATO' ? 'bg-red-500' : 'bg-orange-500'}`}>
@@ -286,18 +361,28 @@ export default function OperatorOrders() {
                       {order.items.map((i) => `${i.quantity}× ${i.itemName ?? i.menuItem?.name}`).join(', ')}
                     </div>
                     <div className="font-bold text-sm text-gray-900 mb-2">₹{order.total.toFixed(0)}</div>
-                    <div className="flex gap-1.5">
+                    <div className="flex flex-col gap-1.5">
                       {!['DELIVERED', 'CANCELLED'].includes(order.status) && (
                         <>
+                          <div className="flex gap-1.5">
+                            <button
+                              onClick={() => updateOrderStatus(order.id, 'DELIVERED').then(load)}
+                              className="flex-1 bg-primary-500 hover:bg-primary-600 text-white text-xs py-1.5 rounded-lg font-medium transition-colors"
+                            >
+                              Delivered
+                            </button>
+                            {order.source === 'OFFLINE' && (
+                              <button
+                                onClick={() => handleEditOrder(order)}
+                                className="flex-1 bg-amber-100 hover:bg-amber-200 text-amber-800 text-xs py-1.5 rounded-lg font-medium transition-colors"
+                              >
+                                Edit
+                              </button>
+                            )}
+                          </div>
                           <button
-                            onClick={() => updateOrderStatus(order.id, 'DELIVERED').then(load)}
-                            className="flex-1 bg-primary-500 hover:bg-primary-600 text-white text-xs py-1.5 rounded-lg font-medium transition-colors"
-                          >
-                            Delivered
-                          </button>
-                          <button
-                            onClick={() => handleCancel(order.id)}
-                            className="flex-1 bg-gray-200 hover:bg-gray-300 text-gray-700 text-xs py-1.5 rounded-lg font-medium transition-colors"
+                            onClick={() => setCancelId(order.id)}
+                            className="w-full bg-gray-200 hover:bg-gray-300 text-gray-700 text-xs py-1.5 rounded-lg font-medium transition-colors"
                           >
                             Cancel
                           </button>
@@ -327,11 +412,15 @@ export default function OperatorOrders() {
           {/* Panel Header */}
           <div className="px-4 py-3 border-b border-gray-100 flex items-center justify-between flex-shrink-0">
             <span className="font-semibold text-gray-800 text-sm">Receipt & Billing</span>
-            {tableId && (
+            {editingOrderId ? (
+              <span className="text-xs bg-amber-100 text-amber-700 px-2 py-1 rounded-lg font-medium">
+                Editing Order
+              </span>
+            ) : tableId ? (
               <span className="text-xs bg-[#F7F5F2] text-gray-600 px-2 py-1 rounded-lg font-medium">
                 Table {tables.find((t) => t.id === tableId)?.number}
               </span>
-            )}
+            ) : null}
           </div>
 
           {/* Order type tabs */}
@@ -448,29 +537,59 @@ export default function OperatorOrders() {
 
             {/* CTAs */}
             <div className="space-y-2">
-              <button
-                onClick={handlePlaceOrder}
-                disabled={placingOrder || !cart.length}
-                className="w-full bg-primary-500 hover:bg-primary-600 disabled:opacity-50 text-white py-3 rounded-xl font-semibold text-sm transition-colors"
-              >
-                {placingOrder ? 'Placing...' : 'Place Order'}
-              </button>
-              <button
-                onClick={() => lastOrder && handlePrintBill(lastOrder)}
-                disabled={!lastOrder}
-                className="w-full border-2 border-gray-800 text-gray-800 hover:bg-[#F7F5F2] disabled:opacity-40 disabled:cursor-not-allowed py-2.5 rounded-xl font-semibold text-sm transition-colors"
-              >
-                Print Bill
-              </button>
-              {cart.length > 0 && (
-                <button onClick={clearCart} className="w-full text-gray-400 hover:text-gray-600 text-xs py-1 transition-colors">
-                  Clear cart
-                </button>
+              {editingOrderId ? (
+                <>
+                  <button
+                    onClick={handleUpdateOrder}
+                    disabled={placingOrder || !cart.length}
+                    className="w-full bg-amber-500 hover:bg-amber-600 disabled:opacity-50 text-white py-3 rounded-xl font-semibold text-sm transition-colors"
+                  >
+                    {placingOrder ? 'Updating...' : 'Update Order'}
+                  </button>
+                  <button
+                    onClick={clearCart}
+                    className="w-full border-2 border-gray-300 text-gray-600 hover:bg-[#F7F5F2] py-2.5 rounded-xl font-semibold text-sm transition-colors"
+                  >
+                    Cancel Edit
+                  </button>
+                </>
+              ) : (
+                <>
+                  <button
+                    onClick={handlePlaceOrder}
+                    disabled={placingOrder || !cart.length}
+                    className="w-full bg-primary-500 hover:bg-primary-600 disabled:opacity-50 text-white py-3 rounded-xl font-semibold text-sm transition-colors"
+                  >
+                    {placingOrder ? 'Placing...' : 'Place Order'}
+                  </button>
+                  <button
+                    onClick={() => lastOrder && handlePrintBill(lastOrder)}
+                    disabled={!lastOrder}
+                    className="w-full border-2 border-gray-800 text-gray-800 hover:bg-[#F7F5F2] disabled:opacity-40 disabled:cursor-not-allowed py-2.5 rounded-xl font-semibold text-sm transition-colors"
+                  >
+                    Print Bill
+                  </button>
+                  {cart.length > 0 && (
+                    <button onClick={clearCart} className="w-full text-gray-400 hover:text-gray-600 text-xs py-1 transition-colors">
+                      Clear cart
+                    </button>
+                  )}
+                </>
               )}
             </div>
           </div>
         </div>
       </div>
     </div>
+
+    {cancelId && (
+      <ConfirmModal
+        message="Cancel this order? This cannot be undone."
+        confirmLabel="Cancel Order"
+        onConfirm={() => handleCancel(cancelId)}
+        onCancel={() => setCancelId(null)}
+      />
+    )}
+    </>
   );
 }

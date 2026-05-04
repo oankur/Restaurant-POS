@@ -20,11 +20,18 @@ export type AuthSession = OutletSession | AdminSession;
 // Orders
 export type OrderStatus = 'PENDING' | 'CONFIRMED' | 'PREPARING' | 'READY' | 'DELIVERED' | 'CANCELLED';
 export type OrderType = 'DINE_IN' | 'TAKEAWAY' | 'DELIVERY';
-export type OrderSource = 'OFFLINE' | 'ZOMATO' | 'SWIGGY';
+export type OrderSource = 'OFFLINE' | 'ZOMATO' | 'SWIGGY' | 'TOING';
 export type TableStatus = 'AVAILABLE' | 'OCCUPIED' | 'RESERVED';
 export type PaymentMode = 'CASH' | 'CARD' | 'UPI';
 
 export interface Category {
+  id: string;
+  name: string;
+  outletId: string;
+  createdAt: string;
+}
+
+export interface SubCategory {
   id: string;
   name: string;
   outletId: string;
@@ -40,6 +47,10 @@ export interface Outlet {
   username: string;
   taxRate: number;
   taxEnabled: boolean;
+  kitchenEnabled: boolean;
+  swiggyOutletId: string | null;
+  zomatoOutletId: string | null;
+  toingOutletId: string | null;
   createdAt: string;
 }
 
@@ -49,6 +60,7 @@ export interface MenuItem {
   description?: string;
   price: number;
   category: string;
+  subCategory?: string | null;
   isAvailable: boolean;
   outletId: string;
 }
@@ -74,6 +86,7 @@ export interface OrderItem {
 export interface Order {
   id: string;
   orderNumber: string;
+  dailySequence: number;
   type: OrderType;
   status: OrderStatus;
   source: OrderSource;

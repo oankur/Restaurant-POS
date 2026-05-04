@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { getOrders, getMenu, getTables, simulateOrder } from '../../api';
 import { useAuthStore } from '../../store/authStore';
 import { socket, joinOutlet } from '../../utils/socket';
+import { formatInvoiceId } from '../../utils/print';
 import type { Order } from '../../types';
 import toast from 'react-hot-toast';
 
@@ -37,7 +38,7 @@ export default function OutletAdminDashboard() {
   const todayRevenue = todayOrders.filter((o) => o.status !== 'CANCELLED').reduce((sum, o) => sum + o.total, 0);
   const activeOrders = orders.filter((o) => !['DELIVERED', 'CANCELLED'].includes(o.status));
 
-  const handleSimulate = async (source: 'ZOMATO' | 'SWIGGY') => {
+  const handleSimulate = async (source: 'ZOMATO' | 'SWIGGY' | 'TOING') => {
     try {
       await simulateOrder(outletId, source);
       toast.success(`Simulated ${source} order!`);
@@ -69,6 +70,7 @@ export default function OutletAdminDashboard() {
         <div className="flex gap-3">
           <button className="btn-secondary text-red-600 border-red-200" onClick={() => handleSimulate('ZOMATO')}>Simulate Zomato Order</button>
           <button className="btn-secondary text-orange-600 border-orange-200" onClick={() => handleSimulate('SWIGGY')}>Simulate Swiggy Order</button>
+          <button className="btn-secondary text-purple-600 border-purple-200" onClick={() => handleSimulate('TOING')}>Simulate Toing Order</button>
         </div>
       </div>
 
@@ -78,7 +80,7 @@ export default function OutletAdminDashboard() {
           {activeOrders.slice(0, 8).map((o) => (
             <div key={o.id} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg text-sm">
               <div>
-                <span className="font-medium">{o.orderNumber}</span>
+                <span className="font-medium">{formatInvoiceId(o, o.dailySequence)}</span>
                 <span className="ml-2 text-gray-500">{o.type} • {o.source}</span>
               </div>
               <div className="flex items-center gap-3">

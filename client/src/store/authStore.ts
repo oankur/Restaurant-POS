@@ -5,12 +5,14 @@ import api from '../api/client';
 interface AuthStore {
   token: string | null;
   session: AuthSession | null;
+  kitchenEnabled: boolean;
 
   loginOutlet: (username: string, password: string) => Promise<void>;
   loginAdmin: (username: string, password: string) => Promise<void>;
   loginManager: (password: string) => Promise<void>;
   exitManager: () => Promise<void>;
   logout: () => void;
+  setKitchenEnabled: (val: boolean) => void;
 }
 
 function loadSession(): { token: string | null; session: AuthSession | null } {
@@ -35,6 +37,7 @@ function clearSession() {
 
 export const useAuthStore = create<AuthStore>((set) => ({
   ...loadSession(),
+  kitchenEnabled: true,
 
   loginOutlet: async (username, password) => {
     const { data } = await api.post('/auth/login', { loginType: 'outlet', username, password });
@@ -62,6 +65,8 @@ export const useAuthStore = create<AuthStore>((set) => ({
 
   logout: () => {
     clearSession();
-    set({ token: null, session: null });
+    set({ token: null, session: null, kitchenEnabled: true });
   },
+
+  setKitchenEnabled: (val) => set({ kitchenEnabled: val }),
 }));

@@ -1,5 +1,5 @@
 import api from './client';
-import type { Outlet, MenuItem, Table, Order, Bill, Category } from '../types';
+import type { Outlet, MenuItem, Table, Order, Bill, Category, SubCategory } from '../types';
 
 // Admin credentials
 export const updateAdminCredentials = (data: { currentPassword: string; newUsername?: string; newPassword?: string }) =>
@@ -10,10 +10,10 @@ export const getOutlets = () => api.get<Outlet[]>('/outlets').then((r) => r.data
 export const getOutlet = (id: string) => api.get<Outlet>(`/outlets/${id}`).then((r) => r.data);
 export const createOutlet = (data: { name: string; address: string; phone: string; username: string; password: string; managerPassword: string }) =>
   api.post<Outlet>('/outlets', data).then((r) => r.data);
-export const updateOutlet = (id: string, data: Partial<Outlet> & { password?: string; managerPassword?: string }) =>
+export const updateOutlet = (id: string, data: Partial<Outlet> & { password?: string; managerPassword?: string; swiggyOutletId?: string | null; zomatoOutletId?: string | null; toingOutletId?: string | null }) =>
   api.put<Outlet>(`/outlets/${id}`, data).then((r) => r.data);
 export const deleteOutlet = (id: string) => api.delete(`/outlets/${id}`).then((r) => r.data);
-export const updateOutletSettings = (id: string, data: { taxRate?: number; taxEnabled?: boolean }) =>
+export const updateOutletSettings = (id: string, data: { taxRate?: number; taxEnabled?: boolean; kitchenEnabled?: boolean }) =>
   api.put(`/outlets/${id}/settings`, data).then((r) => r.data);
 
 // Menu
@@ -33,6 +33,8 @@ export const getOrders = (outletId: string, params?: Record<string, string>) =>
   api.get<Order[]>(`/orders/outlet/${outletId}`, { params }).then((r) => r.data);
 export const getOrder = (id: string) => api.get<Order>(`/orders/${id}`).then((r) => r.data);
 export const createOrder = (data: any) => api.post<Order>('/orders', data).then((r) => r.data);
+export const updateOrder = (id: string, items: { menuItemId: string; quantity: number; notes?: string }[]) =>
+  api.put<Order>(`/orders/${id}`, { items }).then((r) => r.data);
 export const updateOrderStatus = (id: string, status: string) =>
   api.put<Order>(`/orders/${id}/status`, { status }).then((r) => r.data);
 export const cancelOrder = (id: string) => api.delete(`/orders/${id}`).then((r) => r.data);
@@ -47,6 +49,8 @@ export const getBillByOrder = (orderId: string) =>
 export const getOutletReport = (outletId: string, from?: string, to?: string) =>
   api.get(`/reports/outlet/${outletId}`, { params: { from, to } }).then((r) => r.data);
 export const getAllReports = () => api.get('/reports/all').then((r) => r.data);
+export const getSuperReport = (params: { period?: string; from?: string; to?: string }) =>
+  api.get('/reports/super', { params }).then((r) => r.data);
 
 // Categories
 export const getCategories = (outletId: string) => api.get<Category[]>(`/categories/${outletId}`).then((r) => r.data);
@@ -54,12 +58,12 @@ export const createCategory = (name: string, outletId: string) => api.post<Categ
 export const updateCategory = (id: string, name: string) => api.put<Category>(`/categories/${id}`, { name }).then((r) => r.data);
 export const deleteCategory = (id: string) => api.delete(`/categories/${id}`).then((r) => r.data);
 
-// Global settings
-export const getGlobalSettings = () =>
-  api.get<{ id: string; taxEnabled: boolean }>('/settings').then((r) => r.data);
-export const updateGlobalSettings = (taxEnabled: boolean) =>
-  api.put<{ id: string; taxEnabled: boolean }>('/settings', { taxEnabled }).then((r) => r.data);
+// Sub-categories
+export const getSubCategories = (outletId: string) => api.get<SubCategory[]>(`/subcategories/${outletId}`).then((r) => r.data);
+export const createSubCategory = (name: string, outletId: string) => api.post<SubCategory>('/subcategories', { name, outletId }).then((r) => r.data);
+export const updateSubCategory = (id: string, name: string) => api.put<SubCategory>(`/subcategories/${id}`, { name }).then((r) => r.data);
+export const deleteSubCategory = (id: string) => api.delete(`/subcategories/${id}`).then((r) => r.data);
 
 // Integrations
-export const simulateOrder = (outletId: string, source: 'ZOMATO' | 'SWIGGY') =>
+export const simulateOrder = (outletId: string, source: 'ZOMATO' | 'SWIGGY' | 'TOING') =>
   api.post(`/integrations/simulate/${outletId}`, { source }).then((r) => r.data);

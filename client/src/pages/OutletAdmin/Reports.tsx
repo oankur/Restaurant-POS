@@ -35,7 +35,6 @@ export default function OutletAdminReports() {
         {[
           { label: 'Total Revenue', value: `₹${report.totalRevenue.toFixed(2)}` },
           { label: 'Total Orders', value: report.totalOrders },
-          { label: 'Avg Order Value', value: `₹${report.avgOrderValue.toFixed(2)}` },
         ].map(({ label, value }) => (
           <div key={label} className="card">
             <div className="text-2xl font-bold">{value}</div>

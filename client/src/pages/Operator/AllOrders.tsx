@@ -3,16 +3,19 @@ import { useNavigate } from 'react-router-dom';
 import { getOrders, updateOrderStatus, cancelOrder } from '../../api';
 import { useAuthStore } from '../../store/authStore';
 import { socket, joinOutlet } from '../../utils/socket';
+import { formatInvoiceId } from '../../utils/print';
+import ConfirmModal from '../../components/ConfirmModal';
 import type { Order } from '../../types';
 import toast from 'react-hot-toast';
 
-type FilterTab = 'ALL' | 'OFFLINE_DELIVERED' | 'ZOMATO_DELIVERED' | 'SWIGGY_DELIVERED' | 'CANCELLED';
+type FilterTab = 'ALL' | 'OFFLINE_DELIVERED' | 'ZOMATO_DELIVERED' | 'SWIGGY_DELIVERED' | 'TOING_DELIVERED' | 'CANCELLED';
 
 const TABS: { key: FilterTab; label: string; color: string; activeColor: string }[] = [
   { key: 'ALL',               label: 'All Orders',        color: 'bg-[#F7F5F2] text-gray-600',     activeColor: 'bg-primary-500 text-white' },
   { key: 'OFFLINE_DELIVERED', label: 'Offline (Delivered)', color: 'bg-[#F7F5F2] text-gray-600',   activeColor: 'bg-gray-700 text-white' },
   { key: 'ZOMATO_DELIVERED',  label: 'Zomato (Delivered)', color: 'bg-[#F7F5F2] text-gray-600',    activeColor: 'bg-red-500 text-white' },
   { key: 'SWIGGY_DELIVERED',  label: 'Swiggy (Delivered)', color: 'bg-[#F7F5F2] text-gray-600',    activeColor: 'bg-primary-500 text-white' },
+  { key: 'TOING_DELIVERED',   label: 'Toing (Delivered)',  color: 'bg-[#F7F5F2] text-gray-600',    activeColor: 'bg-purple-500 text-white' },
   { key: 'CANCELLED',         label: 'Cancelled',          color: 'bg-[#F7F5F2] text-gray-600',    activeColor: 'bg-red-100 text-red-700' },
 ];
 
@@ -25,8 +28,9 @@ const nextStatus: Record<string, string> = {
 };
 const sourceColors: Record<string, string> = {
   OFFLINE: 'bg-[#F7F5F2] text-gray-600',
-  ZOMATO: 'bg-red-100 text-red-700',
-  SWIGGY: 'bg-orange-100 text-orange-700',
+  ZOMATO:  'bg-red-100 text-red-700',
+  SWIGGY:  'bg-orange-100 text-orange-700',
+  TOING:   'bg-purple-100 text-purple-700',
 };
 
 function applyTabFilter(orders: Order[], tab: FilterTab): Order[] {
@@ -35,6 +39,7 @@ function applyTabFilter(orders: Order[], tab: FilterTab): Order[] {
     case 'OFFLINE_DELIVERED': return orders.filter((o) => o.source === 'OFFLINE'  && o.status === 'DELIVERED');
     case 'ZOMATO_DELIVERED':  return orders.filter((o) => o.source === 'ZOMATO'   && o.status === 'DELIVERED');
     case 'SWIGGY_DELIVERED':  return orders.filter((o) => o.source === 'SWIGGY'   && o.status === 'DELIVERED');
+    case 'TOING_DELIVERED':   return orders.filter((o) => o.source === 'TOING'    && o.status === 'DELIVERED');
     case 'CANCELLED':         return orders.filter((o) => o.status === 'CANCELLED');
     default:                  return orders;
   }
@@ -47,6 +52,7 @@ export default function AllOrders() {
   const [orders, setOrders] = useState<Order[]>([]);
   const [activeTab, setActiveTab] = useState<FilterTab>('ALL');
   const [search, setSearch] = useState('');
+  const [cancelId, setCancelId] = useState<string | null>(null);
 
   const load = () => getOrders(outletId).then(setOrders);
 
@@ -55,7 +61,7 @@ export default function AllOrders() {
     load();
     socket.on('new_order', (order: Order) => {
       setOrders((prev) => [order, ...prev]);
-      toast.success(`New order: ${order.orderNumber}`, { icon: '🔔' });
+      toast.success(`New order: ${formatInvoiceId(order, order.dailySequence)}`, { icon: '🔔' });
     });
     socket.on('order_updated', (order: Order) => {
       setOrders((prev) => prev.map((o) => (o.id === order.id ? order : o)));
@@ -68,6 +74,7 @@ export default function AllOrders() {
     OFFLINE_DELIVERED: orders.filter((o) => o.source === 'OFFLINE' && o.status === 'DELIVERED').length,
     ZOMATO_DELIVERED:  orders.filter((o) => o.source === 'ZOMATO'  && o.status === 'DELIVERED').length,
     SWIGGY_DELIVERED:  orders.filter((o) => o.source === 'SWIGGY'  && o.status === 'DELIVERED').length,
+    TOING_DELIVERED:   orders.filter((o) => o.source === 'TOING'   && o.status === 'DELIVERED').length,
     CANCELLED:         orders.filter((o) => o.status === 'CANCELLED').length,
   }), [orders]);
 
@@ -76,7 +83,7 @@ export default function AllOrders() {
     if (!search) return byTab;
     const q = search.toLowerCase();
     return byTab.filter((o) =>
-      o.orderNumber.toLowerCase().includes(q) ||
+      formatInvoiceId(o, o.dailySequence).toLowerCase().includes(q) ||
       o.customerName?.toLowerCase().includes(q) ||
       o.items.some((i) => (i.itemName ?? i.menuItem?.name ?? '').toLowerCase().includes(q))
     );
@@ -87,12 +94,13 @@ export default function AllOrders() {
     load();
   };
   const handleCancel = async (id: string) => {
-    if (!confirm('Cancel this order?')) return;
     await cancelOrder(id);
+    setCancelId(null);
     load();
   };
 
   return (
+    <>
     <div className="flex flex-col flex-1 overflow-hidden bg-[#F7F5F2]" style={{ height: '100%' }}>
       {/* Header */}
       <header className="bg-white border-b border-gray-200 px-6 py-4 flex items-center gap-3 flex-shrink-0">
@@ -138,7 +146,7 @@ export default function AllOrders() {
               <div className="flex items-start gap-4">
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center gap-2 flex-wrap mb-1.5">
-                    <span className="font-bold text-gray-900 text-sm">{order.orderNumber}</span>
+                    <span className="font-bold text-gray-900 text-sm">{formatInvoiceId(order, order.dailySequence)}</span>
                     <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${sourceColors[order.source]}`}>{order.source}</span>
                     <span className={statusBadge[order.status]}>{order.status}</span>
                     <span className="text-xs text-gray-400">{order.type.replace('_', ' ')}</span>
@@ -169,7 +177,7 @@ export default function AllOrders() {
                   </button>
                   <button
                     className="btn-secondary text-xs py-1.5 px-4 text-red-500 border-red-200 hover:bg-red-50"
-                    onClick={() => handleCancel(order.id)}
+                    onClick={() => setCancelId(order.id)}
                   >
                     Cancel
                   </button>
@@ -194,5 +202,15 @@ export default function AllOrders() {
         </div>
       </div>
     </div>
+
+    {cancelId && (
+      <ConfirmModal
+        message="Cancel this order? This cannot be undone."
+        confirmLabel="Cancel Order"
+        onConfirm={() => handleCancel(cancelId)}
+        onCancel={() => setCancelId(null)}
+      />
+    )}
+    </>
   );
 }
