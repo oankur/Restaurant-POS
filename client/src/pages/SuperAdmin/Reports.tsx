@@ -234,9 +234,9 @@ function OutletCard({ outlet, from, to }: { outlet: OutletData; from: string; to
 
 function TimeSeriesTable({ data, tab }: { data: ReportData; tab: TimeTab }) {
   const rows: Array<{ label: string; totalRevenue: number; totalOrders: number; bySource: SourceMap }> =
-    tab === 'daily'   ? data.timeSeries.daily.map((d) => ({ label: new Date(d.date + 'T12:00:00+05:30').toLocaleDateString('en-IN', { weekday: 'short', month: 'short', day: 'numeric' }), ...d })) :
-    tab === 'weekly'  ? data.timeSeries.weekly.map((w)  => ({ label: w.label, ...w })) :
-                        data.timeSeries.monthly.map((m) => ({ label: m.label, ...m }));
+    tab === 'daily'   ? data.timeSeries.daily.map((d) => ({ ...d, label: new Date(d.date + 'T12:00:00+05:30').toLocaleDateString('en-IN', { weekday: 'short', month: 'short', day: 'numeric' }) })) :
+    tab === 'weekly'  ? data.timeSeries.weekly.map((w)  => ({ ...w })) :
+                        data.timeSeries.monthly.map((m) => ({ ...m }));
 
   if (!rows.length) return <div className="text-center text-gray-400 py-8 text-sm">No data for this period</div>;
 
