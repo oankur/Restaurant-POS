@@ -14,10 +14,10 @@ function printInIframe(html: string) {
 const baseStyle = `
   @page { size: 80mm auto; margin: 5mm; }
   * { margin:0; padding:0; box-sizing:border-box; }
-  body { font-family:'Courier New',monospace; font-size:14px; font-weight:600; width:70mm; margin:0 auto; }
+  body { font-family:'Courier New',monospace; font-size:14px; font-weight:bold; width:70mm; margin:0 auto; }
   @media print { body { margin:0; padding:0; } }
   h1 { text-align:center; font-size:17px; font-weight:bold; letter-spacing:1px; }
-  .sub { text-align:center; font-size:14px; font-weight:600; color:#555; margin-bottom:4px; }
+  .sub { text-align:center; font-size:14px; font-weight:bold; color:#555; margin-bottom:4px; }
   .divider { border-top:1px dashed #000; margin:6px 0; }
   .row { display:flex; justify-content:space-between; padding:2px 0; }
   .bold { font-weight:bold; }
@@ -40,12 +40,12 @@ export function printKOT(order: Order, outletName = '') {
     <div class="divider"></div>
     ${order.items.map(i => `
       <div class="row">
-        <span style="width:28px;">${i.quantity}x</span>
-        <span style="flex:1;padding-left:8px;">${i.itemName ?? i.menuItem?.name}${i.menuItem?.subCategory ? `<br><span style="font-size:14px;font-weight:600;color:#666;">${i.menuItem.subCategory}</span>` : ''}${i.notes ? `<br><span style="font-size:14px;font-weight:600;color:#666;">${i.notes}</span>` : ''}</span>
+        <span style="width:28px;font-size:16px;">${i.quantity}x</span>
+        <span style="flex:1;padding-left:8px;font-size:16px;">${i.itemName ?? i.menuItem?.name}${i.menuItem?.subCategory ? `<br><span style="font-size:14px;font-weight:bold;color:#666;">${i.menuItem.subCategory}</span>` : ''}${i.notes ? `<br><span style="font-size:14px;font-weight:bold;color:#666;">${i.notes}</span>` : ''}</span>
       </div>`).join('')}
     ${order.notes ? `<div class="divider"></div><div class="row"><span class="bold">Note:</span><span>${order.notes}</span></div>` : ''}
     <div class="divider"></div>
-    <p class="center" style="font-size:14px;font-weight:600;margin-top:6px;">${new Date().toLocaleString()}</p>
+    <p class="center" style="font-size:14px;font-weight:bold;margin-top:6px;">${new Date().toLocaleString()}</p>
   </body></html>`;
   printInIframe(html);
 }
@@ -69,7 +69,7 @@ export function printBill(order: Order, bill: Bill) {
     <p class="sub">Customer Bill</p>
     ${outletAddress ? `<p class="sub">${outletAddress}</p>` : ''}
     <div class="divider"></div>
-    <div class="row"><span class="bold">Invoice#</span><span style="font-size:14px;font-weight:600;">${invoiceId}</span></div>
+    <div class="row"><span class="bold">Invoice#</span><span style="font-size:14px;font-weight:bold;">${invoiceId}</span></div>
     <div class="row"><span class="bold">Date</span><span>${new Date(order.createdAt).toLocaleDateString()}</span></div>
     <div class="row"><span class="bold">Time</span><span>${new Date(order.createdAt).toLocaleTimeString()}</span></div>
     ${order.table ? `<div class="row"><span class="bold">Table</span><span>${order.table.number}</span></div>` : ''}
@@ -79,7 +79,7 @@ export function printBill(order: Order, bill: Bill) {
     <div class="divider"></div>
     ${order.items.map(i => `
       <div class="row" style="align-items:flex-start;">
-        <span style="flex:1">${i.itemName ?? i.menuItem?.name}${i.menuItem?.subCategory ? `<br><span style="font-size:14px;font-weight:600;color:#888;">${i.menuItem.subCategory}</span>` : ''}</span>
+        <span style="flex:1">${i.itemName ?? i.menuItem?.name}${i.menuItem?.subCategory ? `<br><span style="font-size:14px;font-weight:bold;color:#888;">${i.menuItem.subCategory}</span>` : ''}</span>
         <span style="width:28px;text-align:center;">${i.quantity}</span>
         <span style="width:55px;text-align:right;">₹${(i.price * i.quantity).toFixed(0)}</span>
       </div>`).join('')}
