@@ -17,7 +17,7 @@ const baseStyle = `
   body { font-family:'Courier New',monospace; font-size:14px; font-weight:bold; width:70mm; margin:0 auto; }
   @media print { body { margin:0; padding:0; } }
   h1 { text-align:center; font-size:17px; font-weight:bold; letter-spacing:1px; }
-  .sub { text-align:center; font-size:14px; font-weight:bold; color:#555; margin-bottom:4px; }
+  .sub { text-align:center; font-size:15px; font-weight:600; color:#555; margin-bottom:4px; }
   .divider { border-top:1px dashed #000; margin:6px 0; }
   .row { display:flex; justify-content:space-between; padding:2px 0; }
   .bold { font-weight:bold; }
