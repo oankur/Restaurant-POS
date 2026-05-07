@@ -41,7 +41,7 @@ export function printKOT(order: Order, outletName = '') {
     ${order.items.map(i => `
       <div class="row">
         <span style="width:28px;font-size:16px;">${i.quantity}x</span>
-        <span style="flex:1;padding-left:8px;font-size:16px;">${i.itemName ?? i.menuItem?.name}${i.menuItem?.subCategory ? `<br><span style="font-size:14px;font-weight:bold;font-family:Arial,sans-serif;color:#666;">${i.menuItem.subCategory}</span>` : ''}${i.notes ? `<br><span style="font-size:14px;font-weight:bold;font-family:Arial,sans-serif;color:#666;">${i.notes}</span>` : ''}</span>
+        <span style="flex:1;padding-left:8px;font-size:16px;">${i.itemName ?? i.menuItem?.name}${i.menuItem?.subCategory ? `<br><span style="font-size:14px;font-weight:bold;color:#000;">${i.menuItem.subCategory}</span>` : ''}${i.notes ? `<br><span style="font-size:14px;font-weight:bold;color:#000;">${i.notes}</span>` : ''}</span>
       </div>`).join('')}
     ${order.notes ? `<div class="divider"></div><div class="row"><span class="bold">Note:</span><span>${order.notes}</span></div>` : ''}
     <div class="divider"></div>
