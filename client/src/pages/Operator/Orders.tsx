@@ -119,7 +119,6 @@ export default function OperatorOrders() {
   // ─── Place order ─────────────────────────────────────
   const handlePlaceOrder = async () => {
     if (!cart.length) return toast.error('Add items first');
-    if (orderType === 'DINE_IN' && !tableId) return toast.error('Select a table');
     setPlacingOrder(true);
     try {
       const order = await createOrder({
@@ -448,7 +447,7 @@ export default function OperatorOrders() {
           <div className="px-4 py-2 border-b border-gray-100 flex-shrink-0">
             {orderType === 'DINE_IN' ? (
               <select className="input text-sm" value={tableId} onChange={(e) => setTableId(e.target.value)}>
-                <option value="">Select table...</option>
+                <option value="">N/A</option>
                 {availableTables.map((t) => (
                   <option key={t.id} value={t.id}>Table {t.number} ({t.capacity} seats)</option>
                 ))}
