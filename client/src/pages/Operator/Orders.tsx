@@ -66,13 +66,17 @@ export default function OperatorOrders() {
   const [allSubCategories, setAllSubCategories] = useState<string[]>([]);
   const [search, setSearch] = useState('');
   const [orderTab, setOrderTab] = useState<'ALL' | 'ZOMATO' | 'SWIGGY' | 'TOING'>('ALL');
-  const load = useCallback(() => getOrders(outletId).then(setOrders), [outletId]);
+  const load = useCallback(async () => {
+    const [orders, tables] = await Promise.all([getOrders(outletId), getTables(outletId)]);
+    setOrders(orders);
+    setTables(tables);
+  }, [outletId]);
 
   useEffect(() => {
     joinOutlet(outletId);
-    Promise.all([load(), getMenu(outletId), getTables(outletId), getOutlet(outletId)]).then(([_, m, t, outlet]) => {
+    load();
+    Promise.all([getMenu(outletId), getOutlet(outletId)]).then(([m, outlet]) => {
       setMenuItems(m);
-      setTables(t);
       setTaxEnabled(outlet.taxEnabled);
       setTaxRate(outlet.taxRate);
     });

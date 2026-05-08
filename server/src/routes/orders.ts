@@ -182,6 +182,9 @@ router.delete('/:id', async (req: AuthRequest, res: Response) => {
       where: { id: req.params.id },
       data: { status: 'CANCELLED' },
     });
+    if (order.tableId) {
+      await prisma.table.update({ where: { id: order.tableId }, data: { status: 'AVAILABLE' } });
+    }
     getIO().to(order.outletId).emit('order_updated', { ...order, status: 'CANCELLED' });
     getIO().to('super_admin').emit('order_activity', { outletId: order.outletId });
     res.json({ message: 'Order cancelled' });
